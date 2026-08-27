@@ -279,14 +279,10 @@ elif time_preset == "Custom Range":
     start_date = datetime.combine(start_d, datetime.min.time())
     end_date = datetime.combine(end_d, datetime.max.time())
 
-# Granularity & Metric Controls
+# Granularity Control
 granularity_label = st.sidebar.selectbox(t("granularity"), [t("quarterly"), t("yearly_avg")])
 granularity_param = "yearly" if granularity_label == t("yearly_avg") else "quarterly"
 
-metric_option = st.sidebar.selectbox(
-    t("metric_select"),
-    [t("metric_index"), t("metric_qoq"), t("metric_yoy")]
-)
 
 st.sidebar.markdown("---")
 st.sidebar.caption("Source: Bank of Greece / Τράπεζα της Ελλάδος")
@@ -742,7 +738,7 @@ elif app_key == "forecast":
     st.title("🔮 " + ("Πρόβλεψη Τιμών Ακινήτων (ML Forecasting)" if lang == "el" else "Machine Learning Price Index Forecasting"))
     st.caption("Πρόβλεψη της πορείας των δεικτών τιμών διαμερισμάτων 1–3 έτη στο μέλλον με χρήση Holt's Linear Exponential Smoothing & 95% ζωνών εμπιστοσύνης." if lang == "el" else "Statistical time-series forecasting of apartment price indices 1–3 years ahead using Holt's Linear Exponential Smoothing with 95% confidence intervals.")
 
-    c_area, c_horizon = st.columns([2, 1])
+    c_area, c_horizon, c_freq = st.columns([2, 1, 1])
     with c_area:
         forecast_area_name = st.selectbox(
             t("geo_areas"),
@@ -759,6 +755,14 @@ elif app_key == "forecast":
         )
         forecast_quarters = horizon_years * 4
 
+    with c_freq:
+        fc_frequency = st.radio(
+            "Συχνότητα Προβολής" if lang == "el" else "Forecast Frequency",
+            ["Τριμηνιαία" if lang == "el" else "Quarterly", "Ετήσια (ΜΟ)" if lang == "el" else "Yearly (Avg)"],
+            index=1 if granularity_param == "yearly" else 0
+        )
+        is_yearly_fc = ("Ετήσια" in fc_frequency or "Yearly" in fc_frequency)
+
     from forecasting import generate_area_forecast
     f_res = generate_area_forecast(db, area_slug=forecast_slug, forecast_quarters=forecast_quarters)
     
@@ -766,6 +770,28 @@ elif app_key == "forecast":
         summary = f_res["summary"]
         hist_df = pd.DataFrame(f_res["historicalData"])
         fc_df = pd.DataFrame(f_res["forecastData"])
+
+        if is_yearly_fc:
+            # Aggregate historical data by year
+            hist_yearly = hist_df.groupby('year').agg({
+                'priceIndex': 'mean',
+                'quarter': lambda x: 'Annual Avg'
+            }).reset_index()
+            hist_df = hist_yearly
+            avg_tag = "ΜΟ" if lang == "el" else "Avg"
+            hist_df['periodLabel'] = hist_df['year'].apply(lambda y: f"{y} {avg_tag}")
+
+            # Aggregate forecast data by year
+            fc_yearly = fc_df.groupby('year').agg({
+                'forecastIndex': 'mean',
+                'lowerBound': 'mean',
+                'upperBound': 'mean',
+                'cumulativeGrowthPct': 'last'
+            }).reset_index()
+            fc_df = fc_yearly
+            fc_df['periodLabel'] = fc_df['year'].apply(lambda y: f"{y} {avg_tag}")
+        else:
+            hist_df['periodLabel'] = hist_df.apply(lambda r: f"{r['year']} Q{r['quarter']}", axis=1)
 
         # KPI metric cards
         m1, m2, m3, m4 = st.columns(4)
@@ -797,9 +823,6 @@ elif app_key == "forecast":
         st.markdown("<br>", unsafe_allow_html=True)
         st.subheader("📈 " + ("Γράφημα Πρόβλεψης & Ζώνη Εμπιστοσύνης 95%" if lang == "el" else "Price Forecast & 95% Confidence Interval"))
 
-        # Build combined Plotly Chart
-        hist_df['periodLabel'] = hist_df.apply(lambda r: f"{r['year']} Q{r['quarter']}", axis=1)
-        
         fig_fc = go.Figure()
         
         # Historical Actual Line
@@ -852,10 +875,12 @@ elif app_key == "forecast":
         )
         st.plotly_chart(fig_fc, use_container_width=True)
 
-        st.subheader("📋 " + ("Πίνακας Προβλέψεων ανά Τρίμηνο" if lang == "el" else "Quarterly Forecast Breakdown"))
+        tbl_hdr = "Πίνακας Προβλέψεων (Ετήσιοι Μέσοι Όροι)" if (is_yearly_fc and lang == "el") else ("Annual Forecast Breakdown" if is_yearly_fc else ("Πίνακας Προβλέψεων ανά Τρίμηνο" if lang == "el" else "Quarterly Forecast Breakdown"))
+        st.subheader("📋 " + tbl_hdr)
         fc_display = fc_df[['periodLabel', 'forecastIndex', 'lowerBound', 'upperBound', 'cumulativeGrowthPct']].copy()
+        period_col = "Period / Έτος" if is_yearly_fc else "Period / Τρίμηνο"
         fc_display.columns = [
-            "Period / Τρίμηνο", "Forecast Index / Πρόβλεψη",
+            period_col, "Forecast Index / Πρόβλεψη",
             "Lower Bound 95%", "Upper Bound 95%", "Cumulative Growth % / Αθροιστική Ανάπτυξη %"
         ]
         st.dataframe(fc_display, use_container_width=True)
@@ -919,6 +944,7 @@ elif app_key == "map":
                 map_df,
                 geojson=greece_geojson,
                 locations="id",
+                featureidkey="id",
                 color=color_col,
                 hover_name="area_name",
                 hover_data={"id": False, "latest_index": ":.1f", "yoy_change": ":+.1f%", "latest_quarter": True},
@@ -927,9 +953,7 @@ elif app_key == "map":
                 title=""
             )
             fig_map.update_geos(
-                projection_type="mercator",
-                center={"lat": 38.5, "lon": 24.0},
-                projection_scale=5.5,
+                fitbounds="locations",
                 visible=True,
                 showcountries=True,
                 countrycolor="#334155",

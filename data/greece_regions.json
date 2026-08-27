@@ -21,8 +21,8 @@
     },
     {
       "type": "Feature",
-      "id": "other_cities",
-      "properties": { "name": "Other Cities", "name_el": "Λοιπές Μεγάλες Πόλεις", "area_slug": "other_cities" },
+      "id": "other-cities",
+      "properties": { "name": "Other Big Cities", "name_el": "Λοιπές Μεγάλες Πόλεις", "area_slug": "other-cities" },
       "geometry": {
         "type": "Polygon",
         "coordinates": [[[21.2, 37.8], [22.8, 37.8], [22.8, 39.8], [21.2, 39.8], [21.2, 37.8]]]
@@ -30,8 +30,8 @@
     },
     {
       "type": "Feature",
-      "id": "other_areas",
-      "properties": { "name": "Other Areas", "name_el": "Λοιπές Περιοχές", "area_slug": "other_areas" },
+      "id": "other-areas",
+      "properties": { "name": "Other Areas", "name_el": "Λοιπές Περιοχές", "area_slug": "other-areas" },
       "geometry": {
         "type": "Polygon",
         "coordinates": [[[20.0, 39.0], [22.2, 39.0], [22.2, 41.7], [20.0, 41.7], [20.0, 39.0]]]
@@ -39,8 +39,8 @@
     },
     {
       "type": "Feature",
-      "id": "rest_of_greece",
-      "properties": { "name": "Rest of Greece", "name_el": "Λοιπή Ελλάδα (Νησιά & Κρήτη)", "area_slug": "rest_of_greece" },
+      "id": "greece",
+      "properties": { "name": "Greece Total / Rest of Greece", "name_el": "Σύνολο Ελλάδος / Νησιά & Κρήτη", "area_slug": "greece" },
       "geometry": {
         "type": "Polygon",
         "coordinates": [[[23.5, 34.8], [26.5, 34.8], [26.5, 37.5], [23.5, 37.5], [23.5, 34.8]]]
