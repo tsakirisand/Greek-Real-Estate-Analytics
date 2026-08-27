@@ -1,95 +1,214 @@
-# Greek Real Estate Market Analytics Platform
+# 🏛️ Greek Real Estate Market Analytics Platform
 
-A production-grade financial analytics platform for visualizing official **Bank of Greece** apartment price index data.
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688.svg?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.25%2B-FF4B4B.svg?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15.0%2B-4169E1.svg?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
-## 📁 Repository File Layout
+An end-to-end, production-grade financial analytics platform and REST API for visualizing, analyzing, and querying official **Bank of Greece** apartment price index data.
+
+> 🇬🇷 **Ελληνικά**: Πλατφόρμα ανάλυσης και οπτικοποίησης δεδομένων δεικτών τιμών διαμερισμάτων της **Τράπεζας της Ελλάδος**. Προσφέρει διαδραστικό dashboard (Streamlit), REST API (FastAPI) και πλήρη μηχανή ETL.
+
+---
+
+## 🌟 Key Features
+
+* **📊 Interactive Financial Dashboard**: Streamlit dashboard powered by Plotly charts, customizable color palettes, and responsive glassmorphism UI.
+* **🌐 Bilingual Interface**: Native support for **English 🇬🇧** and **Greek 🇬🇷** localization.
+* **🚀 Production REST API**: High-performance FastAPI endpoints for geographic areas, price indices, metric summaries, and revision logs with automatic OpenAPI (`/docs`) generation.
+* **⚡ Automated ETL Engine**: Robust loader (`loader.py`) parsing official Bank of Greece XLS resources (covering regional indices, age groups, quarterly YoY/QoQ growth, and revision tracking).
+* **🗄️ Normalized Relational Database**: PostgreSQL architecture designed with 5 normalized tables (`geographical_area`, `price_index`, `dataset_resource`, `data_revision`, `revision_view`) and Alembic migrations.
+* **🐳 Docker Orchestration**: Complete containerized environment using Docker Compose for PostgreSQL, FastAPI, and Streamlit.
+* **🧪 Comprehensive Testing & Profiling**: Pytest coverage for ETL routines, API endpoints, and database models, plus an execution profiler script (`profiler.py`).
+
+---
+
+## 🏗️ System Architecture
+
+```
+                                  ┌─────────────────────────────┐
+                                  │   Bank of Greece Datasets   │
+                                  │  (62 Official XLS Resources) │
+                                  └──────────────┬──────────────┘
+                                                 │
+                                                 ▼
+                                  ┌─────────────────────────────┐
+                                  │       ETL Engine Loader     │
+                                  │         (loader.py)         │
+                                  └──────────────┬──────────────┘
+                                                 │
+                                                 ▼
+                                  ┌─────────────────────────────┐
+                                  │    PostgreSQL Database      │
+                                  │ (ORM + SQL Optimized Views) │
+                                  └──────┬───────────────┬──────┘
+                                         │               │
+                    ┌────────────────────┘               └────────────────────┐
+                    ▼                                                         ▼
+    ┌──────────────────────────────┐                           ┌──────────────────────────────┐
+    │    FastAPI REST Backend      │                           │ Streamlit Financial Dashboard│
+    │  (http://localhost:8000)     │                           │   (http://localhost:8501)    │
+    └──────────────────────────────┘                           └──────────────────────────────┘
+```
+
+---
+
+## 📁 Repository Directory Structure
 
 ```
 GreekRealEstateAnalytics/
 ├── .streamlit/
-│   └── config.toml           # Streamlit dark theme settings
+│   └── config.toml           # Streamlit custom UI & dark theme configuration
 ├── alembic/
-│   ├── env.py                # Database migration environment
-│   └── versions/             # Migration versions
+│   ├── env.py                # Database migration environment configuration
+│   └── versions/             # Database migration version scripts
 ├── data/
-│   └── datapackage.json      # Bank of Greece source metadata
+│   └── datapackage.json      # Official Bank of Greece dataset source metadata
 ├── tests/
-│   ├── test_api.py           # FastAPI endpoint tests
+│   ├── test_api.py           # FastAPI endpoint test suite
 │   ├── test_loader.py        # ETL parser unit tests
-│   └── test_models.py        # Database query tests
-├── venv/                     # Python virtual environment
-├── .env                      # Database configuration
-├── alembic.ini               # Alembic configuration
-├── api_client.py             # Python client helper
-├── app.log                   # Application audit log
-├── create_tables.py          # Table & SQL view initializer
-├── dashboard.py              # Streamlit interactive analytics web app
-├── database.py               # SQLAlchemy engine & session factory
-├── docker-compose.yml        # Docker orchestration (PostgreSQL, FastAPI, Streamlit)
-├── Dockerfile                # Python container image build file
-├── loader.py                 # Python ETL loader (parses all 62 XLS files)
-├── logger.py                 # Centralized logging setup
-├── main.py                   # FastAPI REST application server
-├── models.py                 # SQLAlchemy ORM models (5 normalized tables)
-├── profiler.py               # Query performance profiling script
-├── pyproject.toml            # Project build metadata
-├── pytest.ini                # Pytest configuration
-├── queries.py                # Database queries & revision view handlers
+│   └── test_models.py        # Database models & query tests
+├── .env.example              # Template environment variable configuration
+├── .gitignore                # Git ignore rules for virtualenvs, logs & credentials
+├── alembic.ini               # Alembic migration engine configuration
+├── api_client.py             # Python client utility for consuming the REST API
+├── app.log                   # Application logging output
+├── create_tables.py          # PostgreSQL schema and SQL views initializer
+├── dashboard.py              # Interactive Streamlit analytics web application
+├── database.py               # SQLAlchemy database engine and session manager
+├── docker-compose.yml        # Docker Compose configuration (Postgres, API, UI)
+├── Dockerfile                # Multi-stage Docker build configuration
+├── i18n.py                   # Internationalization module (EN / EL localization)
+├── loader.py                 # Core ETL pipeline for XLS ingestion
+├── logger.py                 # Centralized logging module
+├── main.py                   # FastAPI application server entrypoint
+├── models.py                 # SQLAlchemy ORM models (5 normalized entities)
+├── profiler.py               # Database query performance benchmarking tool
+├── pyproject.toml            # Project metadata and tooling configuration
+├── pytest.ini                # Pytest configuration settings
+├── queries.py                # Database query layer & view handlers
 ├── README.md                 # Project documentation
-├── requirements.txt          # Python dependencies
-└── schemas.py                # Pydantic schemas
+├── requirements.txt          # Production Python dependencies
+└── schemas.py                # Pydantic models for API request/response serialization
 ```
 
 ---
 
 ## ⚡ Quick Start (Local Setup)
 
-### 1. Initialize Virtual Environment & Install Dependencies
+### 1. Environment Setup
+
+Clone the repository and prepare the Python environment:
+
 ```bash
+# Clone repository
+git clone https://github.com/tsakirisand/Greek-Real-Estate-Analytics-.git
+cd Greek-Real-Estate-Analytics-
+
+# Create virtual environment
 python3 -m venv venv
-./venv/bin/pip install -r requirements.txt
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-### 2. Initialize Database & Run Ingestion
+### 2. Configuration
+
+Copy the example environment file and update your PostgreSQL connection parameters if needed:
+
 ```bash
-# Create PostgreSQL tables and latest_price_indices SQL view
-./venv/bin/python3 create_tables.py
-
-# Download and parse all 62 Bank of Greece XLS resources
-./venv/bin/python3 loader.py
+cp .env.example .env
 ```
 
-### 3. Launch Streamlit Analytics Dashboard
+### 3. Database Initialization & Data Ingestion
+
 ```bash
-./venv/bin/streamlit run dashboard.py --server.port 8501
-```
-Open **[http://localhost:8501](http://localhost:8501)** in your browser.
+# Create database tables and latest_price_indices SQL views
+python3 create_tables.py
 
-### 4. Launch FastAPI REST Server
-```bash
-./venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
+# Run ETL pipeline to ingest Bank of Greece data resources
+python3 loader.py
 ```
-API Documentation is available at **[http://localhost:8000/docs](http://localhost:8000/docs)**.
+
+### 4. Launch Applications
+
+#### 📊 Streamlit Analytics Dashboard
+```bash
+streamlit run dashboard.py --server.port 8501
+```
+Access the interactive web app at **[http://localhost:8501](http://localhost:8501)**.
+
+#### 🚀 FastAPI REST Service
+```bash
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+Explore the interactive API docs at:
+- **Swagger UI**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **ReDoc**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
 
 ---
 
 ## 🐳 Docker Deployment
 
-To launch PostgreSQL, FastAPI, and Streamlit in Docker containers:
+Deploy the full stack (PostgreSQL, FastAPI backend, and Streamlit frontend) with a single command:
+
 ```bash
-docker-compose up --build
+docker-compose up --build -d
+```
+
+- **Dashboard**: [http://localhost:8501](http://localhost:8501)
+- **REST API**: [http://localhost:8000](http://localhost:8000)
+- **API Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+
+To view container logs or stop services:
+```bash
+docker-compose logs -f
+docker-compose down
 ```
 
 ---
 
-## 🧪 Testing & Profiling
+## 🔗 REST API Endpoint Reference
 
-Run unit tests:
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/` | Root endpoint displaying service health and dataset info |
+| `GET` | `/health` | Application health check status |
+| `GET` | `/api/areas` | Retrieve list of all available geographical regions |
+| `GET` | `/api/price-indices` | Fetch filtered price index timeseries (quarterly/annual) |
+| `GET` | `/api/metrics/summary` | Summary statistics (min, max, average, latest index) |
+| `GET` | `/api/market-statistics` | Comprehensive YoY/QoQ growth rates across areas |
+| `GET` | `/api/revisions` | Revision audit log for price index updates |
+| `GET` | `/api/export/csv` | Download filtered datasets in CSV format |
+
+---
+
+## 🧪 Testing & Quality Assurance
+
+Run the automated test suite using `pytest`:
+
 ```bash
-./venv/bin/python -m pytest
+pytest
 ```
 
-Profile query execution speeds:
+To run performance benchmarks on database queries:
+
 ```bash
-./venv/bin/python3 profiler.py
+python3 profiler.py
 ```
+
+---
+
+## 📜 Data Attribution & References
+
+Data source provided by the **Bank of Greece** (*Τράπεζα της Ελλάδος*) — Real Estate Market Analysis Section.
+Dataset definitions and metadata adhere to `datapackage.json` standards.
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
