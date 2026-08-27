@@ -27,8 +27,10 @@ def get_price_indices(
         params["end_date"] = end_date
 
     if area_slugs and len(area_slugs) > 0:
-        where_clauses.append("g.slug = ANY(:area_slugs)")
-        params["area_slugs"] = area_slugs
+        slug_placeholders = [f":slug_{i}" for i in range(len(area_slugs))]
+        where_clauses.append(f"g.slug IN ({', '.join(slug_placeholders)})")
+        for i, s in enumerate(area_slugs):
+            params[f"slug_{i}"] = s
 
     if provisional_filter == "provisional_only":
         where_clauses.append("p.is_provisional = True")
@@ -50,9 +52,10 @@ def get_price_indices(
       p.period_change_percent AS periodchangepercent,
       p.annual_change_percent AS annualchangepercent,
       p.is_provisional AS isprovisional,
-      p.resource_name AS resourcename
-    FROM latest_price_indices p
+      r.resource_name AS resourcename
+    FROM price_indices p
     JOIN geographical_areas g ON p.geographical_area_id = g.id
+    LEFT JOIN dataset_resources r ON p.dataset_resource_id = r.id
     WHERE {where_sql}
     ORDER BY p.period_date ASC;
     """
