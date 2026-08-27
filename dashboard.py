@@ -302,8 +302,13 @@ granularity_param = "yearly" if granularity_label == t("yearly_avg") else "quart
 st.sidebar.markdown("---")
 st.sidebar.caption("Source: Bank of Greece / Τράπεζα της Ελλάδος")
 
-from report_generator import generate_pdf_report
-pdf_data = generate_pdf_report(db, lang=lang)
+@st.cache_data(show_spinner=False)
+def get_cached_pdf_report(lang_code: str):
+    from report_generator import generate_pdf_report
+    with SessionLocal() as session:
+        return generate_pdf_report(session, lang=lang_code)
+
+pdf_data = get_cached_pdf_report(lang)
 st.sidebar.download_button(
     label="📄 " + ("Λήψη Αναφοράς PDF" if lang == "el" else "Download Executive PDF"),
     data=pdf_data,
@@ -312,16 +317,22 @@ st.sidebar.download_button(
     use_container_width=True
 )
 
+@st.cache_data(ttl=600, show_spinner=False)
+def fetch_cached_price_indices(slugs_tuple, start_iso, end_iso, gran):
+    with SessionLocal() as session:
+        s_d = datetime.fromisoformat(start_iso) if start_iso else None
+        e_d = datetime.fromisoformat(end_iso) if end_iso else None
+        return queries.get_price_indices(
+            session,
+            area_slugs=list(slugs_tuple) if slugs_tuple else None,
+            start_date=s_d,
+            end_date=e_d,
+            granularity=gran
+        )
 
-
-# Fetch Active Data
-rows = queries.get_price_indices(
-    db,
-    area_slugs=selected_slugs,
-    start_date=start_date,
-    end_date=end_date,
-    granularity=granularity_param
-)
+s_iso = start_date.isoformat() if start_date else ""
+e_iso = end_date.isoformat() if end_date else ""
+rows = fetch_cached_price_indices(tuple(selected_slugs), s_iso, e_iso, granularity_param)
 
 df = pd.DataFrame(rows) if rows else pd.DataFrame()
 
