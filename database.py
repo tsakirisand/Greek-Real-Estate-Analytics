@@ -6,6 +6,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 raw_url = os.getenv("DATABASE_URL")
+db_user = os.getenv("DB_USER")
+db_pass = os.getenv("DB_PASSWORD")
+db_host = os.getenv("DB_HOST")
+db_port = os.getenv("DB_PORT", "5432")
+db_name = os.getenv("DB_NAME", "greek_real_estate")
+
+if not raw_url and db_user and db_pass and db_host:
+    raw_url = f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
 
 if raw_url:
     # Convert postgres:// to postgresql:// for SQLAlchemy 2.0 compatibility
