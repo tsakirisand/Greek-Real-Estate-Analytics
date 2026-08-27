@@ -205,8 +205,12 @@ def get_db_session():
 
 db = get_db_session()
 
-# Fetch Areas with auto-seeding fallback
-areas_data = queries.get_all_geographical_areas(db)
+# Fetch Areas with safe table creation and auto-seeding fallback
+try:
+    areas_data = queries.get_all_geographical_areas(db)
+except Exception:
+    areas_data = []
+
 if not areas_data:
     try:
         from database import engine
@@ -215,7 +219,7 @@ if not areas_data:
         Base.metadata.create_all(bind=engine)
         import_all()
         areas_data = queries.get_all_geographical_areas(db)
-    except Exception as e:
+    except Exception:
         pass
 
 area_options = {a.name: a.slug for a in areas_data} if areas_data else {"Athens (Αθήνα)": "athens"}

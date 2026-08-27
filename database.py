@@ -42,6 +42,16 @@ except Exception:
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
+def init_db():
+    try:
+        from models import Base as AppBase
+        AppBase.metadata.create_all(bind=engine)
+    except Exception:
+        pass
+
+# Ensure tables are created immediately
+init_db()
+
 def get_db():
     db = SessionLocal()
     try:
