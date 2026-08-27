@@ -1,0 +1,23 @@
+# Environment variables
+.env
+
+# Python & Virtual environment
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Testing & Logs
+.pytest_cache/
+app.log
+*.log
+
+# Project specific data directories
+pgdata/
+downloads/
+
+# IDE / OS specific
+.DS_Store
+.vscode/
+.idea/
