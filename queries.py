@@ -131,62 +131,52 @@ def get_metrics_summary(
     area_slugs: Optional[List[str]] = None,
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
-    granularity: str = "quarterly"
 ):
-    rows = get_price_indices(db, area_slugs=area_slugs, start_date=start_date, end_date=end_date, granularity=granularity)
+    rows = get_price_indices(db, area_slugs=area_slugs, start_date=start_date, end_date=end_date)
     if not rows:
         return {
             "latestIndex": 0,
             "latestQuarter": "N/A",
             "latestYear": 0,
-            "firstPeriod": "N/A",
-            "qoqChange": None,
-            "yoyChange": None,
+            "qoqChange": 0,
+            "yoyChange": 0,
             "cumulativeChange": 0,
+            "marketDirection": "Stable",
             "isProvisional": False,
-            "marketDirection": "Stable"
+            "lastUpdatedDate": None,
+            "resourceName": None,
+            "totalObservations": 0,
+            "firstPeriod": "N/A"
         }
 
-    rows_sorted = sorted(rows, key=lambda x: x["periodDate"])
-    latest = rows_sorted[-1]
-    first = rows_sorted[0]
+    first_obs = rows[0]
+    latest_obs = rows[-1]
 
-    latest_index = latest["priceIndex"]
-    first_index = first["priceIndex"]
-    cum_change = ((latest_index - first_index) / first_index) * 100.0 if first_index > 0 else 0.0
+    latest_idx = float(latest_obs["priceIndex"])
+    first_idx = float(first_obs["priceIndex"])
 
-    qoq_change = latest.get("periodChangePercent")
-    yoy_change = latest.get("annualChangePercent")
+    cum_change = ((latest_idx - first_idx) / first_idx) * 100 if first_idx > 0 else 0
 
-    if granularity == "yearly":
-        latest_period_str = f"{latest['year']} ΜΟ" if "Annual" in str(latest.get('quarter', '')) else f"{latest['year']}"
-        first_period_str = f"{first['year']}"
-    else:
-        latest_period_str = f"{latest['year']} Q{latest['quarter']}"
-        first_period_str = f"{first['year']} Q{first['quarter']}"
+    recent_qoq = float(latest_obs["periodChangePercent"] or 0)
+    market_direction = "Rising" if recent_qoq > 0.3 else ("Falling" if recent_qoq < -0.3 else "Stable")
 
-    if len(rows_sorted) >= 2:
-        prev = rows_sorted[-2]
-        diff = latest_index - prev["priceIndex"]
-        if diff > 0.5:
-            direction = "Rising"
-        elif diff < -0.5:
-            direction = "Falling"
-        else:
-            direction = "Stable"
-    else:
-        direction = "Stable"
+    first_q_str = f"{first_obs['year']} Q{first_obs['quarter']}" if first_obs['quarter'] != "Annual Avg" else f"{first_obs['year']} Avg"
+    latest_q_str = f"{latest_obs['year']} Q{latest_obs['quarter']}" if latest_obs['quarter'] != "Annual Avg" else f"{latest_obs['year']} Avg"
 
     return {
-        "latestIndex": round(latest_index, 2),
-        "latestQuarter": latest_period_str,
-        "latestYear": latest["year"],
-        "firstPeriod": first_period_str,
-        "qoqChange": round(float(qoq_change), 2) if qoq_change is not None else None,
-        "yoyChange": round(float(yoy_change), 2) if yoy_change is not None else None,
+        "latestIndex": round(latest_idx, 2),
+        "latestQuarter": latest_q_str,
+        "latestYear": latest_obs["year"],
+        "latestQuarterNum": latest_obs["quarter"],
+        "qoqChange": round(float(latest_obs["periodChangePercent"]), 2) if latest_obs["periodChangePercent"] is not None else None,
+        "yoyChange": round(float(latest_obs["annualChangePercent"]), 2) if latest_obs["annualChangePercent"] is not None else None,
         "cumulativeChange": round(cum_change, 2),
-        "isProvisional": bool(latest.get("isProvisional", False)),
-        "marketDirection": direction
+        "marketDirection": market_direction,
+        "isProvisional": bool(latest_obs["isProvisional"]),
+        "lastUpdatedDate": latest_obs["periodDate"],
+        "resourceName": latest_obs.get("resourceName"),
+        "totalObservations": len(rows),
+        "firstPeriod": first_q_str
     }
 
 def get_market_statistics(

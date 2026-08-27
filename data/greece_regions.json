@@ -7,9 +7,7 @@
       "properties": { "name": "Athens (Attica)", "name_el": "Αθήνα (Αττική)", "area_slug": "athens" },
       "geometry": {
         "type": "Polygon",
-        "coordinates": [
-          [[23.35, 37.75], [23.95, 37.65], [24.05, 38.05], [23.85, 38.30], [23.45, 38.20], [23.35, 37.75]]
-        ]
+        "coordinates": [[[23.3, 37.6], [24.1, 37.6], [24.1, 38.3], [23.3, 38.3], [23.3, 37.6]]]
       }
     },
     {
@@ -18,9 +16,7 @@
       "properties": { "name": "Thessaloniki", "name_el": "Θεσσαλονίκη", "area_slug": "thessaloniki" },
       "geometry": {
         "type": "Polygon",
-        "coordinates": [
-          [[22.60, 40.40], [23.40, 40.45], [23.80, 40.75], [23.40, 41.15], [22.70, 40.95], [22.60, 40.40]]
-        ]
+        "coordinates": [[[22.5, 40.3], [23.4, 40.3], [23.4, 41.0], [22.5, 41.0], [22.5, 40.3]]]
       }
     },
     {
@@ -29,31 +25,25 @@
       "properties": { "name": "Other Cities", "name_el": "Λοιπές Μεγάλες Πόλεις", "area_slug": "other_cities" },
       "geometry": {
         "type": "Polygon",
-        "coordinates": [
-          [[21.40, 38.10], [22.80, 38.00], [23.10, 39.40], [22.20, 39.80], [21.30, 39.20], [21.40, 38.10]]
-        ]
+        "coordinates": [[[21.2, 37.8], [22.8, 37.8], [22.8, 39.8], [21.2, 39.8], [21.2, 37.8]]]
       }
     },
     {
       "type": "Feature",
       "id": "other_areas",
-      "properties": { "name": "Other Areas", "name_el": "Λοιπές Περιοχές (Β. Ελλάδα)", "area_slug": "other_areas" },
+      "properties": { "name": "Other Areas", "name_el": "Λοιπές Περιοχές", "area_slug": "other_areas" },
       "geometry": {
         "type": "Polygon",
-        "coordinates": [
-          [[20.00, 39.00], [21.50, 39.00], [21.80, 41.50], [20.00, 41.20], [20.00, 39.00]]
-        ]
+        "coordinates": [[[20.0, 39.0], [22.2, 39.0], [22.2, 41.7], [20.0, 41.7], [20.0, 39.0]]]
       }
     },
     {
       "type": "Feature",
       "id": "rest_of_greece",
-      "properties": { "name": "Rest of Greece", "name_el": "Λοιπή Ελλάδα & Νήσοι", "area_slug": "rest_of_greece" },
+      "properties": { "name": "Rest of Greece", "name_el": "Λοιπή Ελλάδα (Νησιά & Κρήτη)", "area_slug": "rest_of_greece" },
       "geometry": {
         "type": "Polygon",
-        "coordinates": [
-          [[21.10, 36.40], [23.20, 36.30], [27.20, 35.20], [28.20, 36.60], [25.50, 38.20], [21.10, 36.40]]
-        ]
+        "coordinates": [[[23.5, 34.8], [26.5, 34.8], [26.5, 37.5], [23.5, 37.5], [23.5, 34.8]]]
       }
     }
   ]

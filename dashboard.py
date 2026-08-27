@@ -108,34 +108,17 @@ custom_css = """
         margin-bottom: 28px;
         box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.4);
     }
-    /* Flexbox Column Layout for 100% Equal Height Metric Cards */
-    div[data-testid="column"] {
-        display: flex !important;
-        flex-direction: column !important;
-    }
-    div[data-testid="column"] > div[data-testid="stVerticalBlock"] {
-        height: 100% !important;
-        display: flex !important;
-        flex-direction: column !important;
-    }
-    div[data-testid="column"] > div[data-testid="stVerticalBlock"] > div.element-container {
-        height: 100% !important;
-    }
-    div[data-testid="column"] > div[data-testid="stVerticalBlock"] > div.element-container > div[data-testid="stMarkdownContainer"] {
-        height: 100% !important;
-    }
     .metric-card {
         background: rgba(30, 41, 59, 0.7) !important;
         border: 1px solid rgba(51, 65, 85, 0.8) !important;
         backdrop-filter: blur(8px);
         border-radius: 16px;
-        padding: 18px 20px;
+        padding: 20px 24px;
         position: relative;
         overflow: hidden;
         transition: all 0.25s ease;
         box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        height: 100% !important;
-        min-height: 145px;
+        height: 165px !important;
         display: flex !important;
         flex-direction: column !important;
         justify-content: space-between !important;
@@ -160,11 +143,10 @@ custom_css = """
         font-size: 30px; font-weight: 800; color: #ffffff !important;
         margin-top: 6px; margin-bottom: 4px; font-family: 'JetBrains Mono', monospace;
     }
-    .metric-subtitle { font-size: 12px; font-weight: 600; min-height: 32px; display: flex; align-items: center; }
+    .metric-subtitle { font-size: 12px; font-weight: 600; }
     .text-emerald { color: #10b981 !important; }
     .text-rose { color: #f43f5e !important; }
     .text-blue { color: #3b82f6 !important; }
-    .text-amber { color: #f59e0b !important; }
     .text-amber { color: #f59e0b !important; }
 
     .insights-card {
@@ -347,7 +329,7 @@ if not df.empty:
         axis=1
     )
 
-summary = queries.get_metrics_summary(db, area_slugs=selected_slugs, start_date=start_date, end_date=end_date, granularity=granularity_param)
+summary = queries.get_metrics_summary(db, area_slugs=selected_slugs, start_date=start_date, end_date=end_date)
 stats = queries.get_market_statistics(db, area_slugs=selected_slugs, start_date=start_date, end_date=end_date)
 
 
@@ -374,9 +356,6 @@ if app_key == "dashboard":
     if summary:
         k1, k2, k3, k4, k5 = st.columns(5)
         
-        card2_title = ("ΡΥΘΜΟΣ ΑΝΑΠΤΥΞΗΣ ΕΤΟΥΣ" if lang == "el" else "YEARLY GROWTH RATE") if granularity_param == "yearly" else t('kpi_qoq_growth')
-        card2_sub = ("έναντι προηγούμενου έτους" if lang == "el" else "vs previous year") if granularity_param == "yearly" else t('vs_prev_quarter')
-        
         with k1:
             st.markdown(f"""
             <div class="metric-card">
@@ -387,14 +366,17 @@ if app_key == "dashboard":
             """, unsafe_allow_html=True)
 
         with k2:
-            qoq = summary.get('qoqChange')
-            qoq_str = f"+{qoq:.1f}%" if qoq and qoq >= 0 else f"{qoq:.1f}%" if qoq else "N/A"
-            color_cls = "text-emerald" if qoq and qoq >= 0 else "text-rose"
+            is_yearly = (granularity_param == "yearly")
+            val_change = summary.get('yoyChange') if is_yearly else summary.get('qoqChange')
+            val_str = f"+{val_change:.1f}%" if val_change and val_change >= 0 else f"{val_change:.1f}%" if val_change else "N/A"
+            color_cls = "text-emerald" if val_change and val_change >= 0 else "text-rose"
+            card_title = ("ΕΤΗΣΙΑ ΜΕΤΑΒΟΛΗ (YoY)" if lang == "el" else "YoY Growth Rate") if is_yearly else t('kpi_qoq_growth')
+            card_sub = ("έναντι προηγούμενου έτους" if lang == "el" else "vs previous year") if is_yearly else t('vs_prev_quarter')
             st.markdown(f"""
             <div class="metric-card">
-                <div class="metric-title">{card2_title}</div>
-                <div class="metric-value {color_cls}">{qoq_str}</div>
-                <div class="metric-subtitle font-mono text-muted">{card2_sub}</div>
+                <div class="metric-title">{card_title}</div>
+                <div class="metric-value {color_cls}">{val_str}</div>
+                <div class="metric-subtitle font-mono text-muted">{card_sub}</div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -600,8 +582,8 @@ if app_key == "dashboard":
         display_df.rename(columns=rename_map, inplace=True)
         st.dataframe(display_df, use_container_width=True, height=350)
         
-        csv_data = ("\ufeff" + display_df.to_csv(index=False)).encode('utf-8')
-        st.download_button(t('download_csv'), csv_data, "greek_real_estate_filtered.csv", "text/csv; charset=utf-8")
+        csv_data = display_df.to_csv(index=False).encode('utf-8')
+        st.download_button(t('download_csv'), csv_data, "greek_real_estate_filtered.csv", "text/csv")
 
 
 # --- 2. DATA ANALYST DIAGNOSIS VIEW ---
@@ -877,6 +859,25 @@ elif app_key == "forecast":
             "Lower Bound 95%", "Upper Bound 95%", "Cumulative Growth % / Αθροιστική Ανάπτυξη %"
         ]
         st.dataframe(fc_display, use_container_width=True)
+
+        # ML Methodology & Sources Explanation Box
+        if lang == "el":
+            ml_info = (
+                "ℹ️ <b>Πώς υπολογίζεται η Πρόβλεψη ML (Methodology & Data Sources):</b><br>"
+                "• <b>Πηγές Δεδομένων:</b> Το μοντέλο αντλεί δεδομένα από τις 19.840 επίσημες εγγραφές της Τράπεζας της Ελλάδος (2006–2025).<br>"
+                "• <b>Αλγόριθμος ML:</b> Χρησιμοποιείται το στατιστικό μοντέλο <i>Holt's Linear Exponential Smoothing</i> (`statsmodels`).<br>"
+                "• <b>Διανύσματα Τάσης:</b> Υπολογίζεται αυτόματα η παράμετρος τάσης (&beta;) και επιπέδου (&alpha;) για την προβολή των τιμών στο μέλλον.<br>"
+                "• <b>Ζώνες Εμπιστοσύνης 95%:</b> Υπολογίζεται η στατιστική διασπορά των υπολοίπων (&sigma;&sup2;), η οποία διευρύνεται αυξανόμενα σε κάθε μελλοντικό τρίμηνο."
+            )
+        else:
+            ml_info = (
+                "ℹ️ <b>How ML Forecasting Works (Methodology & Data Sources):</b><br>"
+                "• <b>Data Sources:</b> Ingests historical quarterly data across 19,840 official Bank of Greece price index records (2006–2025).<br>"
+                "• <b>ML Algorithm:</b> Fits a <i>Holt's Linear Exponential Smoothing</i> time-series model (`statsmodels`).<br>"
+                "• <b>Trend Vectors:</b> Dynamically estimates level (&alpha;) and trend (&beta;) smoothing parameters to project future valuation curves.<br>"
+                "• <b>95% Confidence Bounds:</b> Computes residual variance (&sigma;&sup2;) expanding over the forecast horizon."
+            )
+        st.markdown(f'<div class="chart-insight-box">{ml_info}</div>', unsafe_allow_html=True)
     else:
         st.warning("Δεν βρέθηκαν επαρκή στοιχεία για την παραγωγή πρόβλεψης." if lang == "el" else "Insufficient data to generate time series forecast.")
 
@@ -925,9 +926,22 @@ elif app_key == "map":
                 labels={"latest_index": t("metric_index"), "yoy_change": "YoY Growth %", "area_name": "Region / Περιοχή"},
                 title=""
             )
-            fig_map.update_geos(fitbounds="locations", visible=False)
+            fig_map.update_geos(
+                projection_type="mercator",
+                center={"lat": 38.5, "lon": 24.0},
+                projection_scale=5.5,
+                visible=True,
+                showcountries=True,
+                countrycolor="#334155",
+                showcoastlines=True,
+                coastlinecolor="#60a5fa",
+                showland=True,
+                landcolor="#1e293b",
+                showocean=True,
+                oceancolor="#0f172a"
+            )
             fig_map.update_layout(
-                height=520,
+                height=540,
                 template=plotly_template,
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0)",
@@ -1005,6 +1019,25 @@ elif app_key == "calc":
         )
         st.plotly_chart(fig_amort, use_container_width=True)
         st.dataframe(amort_df, use_container_width=True)
+
+        # Mortgage & ROI Financial Formulas Explanation Box
+        if lang == "el":
+            calc_info = (
+                "ℹ️ <b>Πώς υπολογίζονται οι Δείκτες Επένδυσης & το Στεγαστικό Δάνειο:</b><br>"
+                "• <b>Μηνιαία Δόση Δανείου (PMT):</b> Υπολογίζεται βάσει του μαθηματικού τύπου τοκοχρεωλυτικής απόσβεσης: <i>M = P &middot; [r(1+r)&supn;] / [(1+r)&supn; - 1]</i>.<br>"
+                "• <b>Gross Rental Yield:</b> <i>(Ετήσια Ακαθάριστα Ενοίκια / Αξία Ακινήτου) &times; 100</i>.<br>"
+                "• <b>Net Cap Rate:</b> <i>[Ετήσια Ενοίκια - (ΕΝΦΙΑ + Ετήσια Συντήρηση)] / Αξία Ακινήτου &times; 100</i>.<br>"
+                "• <b>Cash-on-Cash Return:</b> <i>(Καθαρή Ετήσια Ταμειακή Ροή μετά τη ดόση Δανείου / Ιδία Προκαταβολή) &times; 100</i>."
+            )
+        else:
+            calc_info = (
+                "ℹ️ <b>How Financial Investment Metrics & Mortgages are Calculated:</b><br>"
+                "• <b>Monthly Mortgage (PMT):</b> Computed using standard amortization math: <i>M = P &middot; [r(1+r)&supn;] / [(1+r)&supn; - 1]</i>.<br>"
+                "• <b>Gross Rental Yield:</b> <i>(Gross Annual Rent / Property Price) &times; 100</i>.<br>"
+                "• <b>Net Cap Rate:</b> <i>[Annual Rent - (ENFIA Tax + Maintenance)] / Property Price &times; 100</i>.<br>"
+                "• <b>Cash-on-Cash Return:</b> <i>(Net Annual Cash Flow after Mortgage / Cash Down Payment) &times; 100</i>."
+            )
+        st.markdown(f'<div class="chart-insight-box">{calc_info}</div>', unsafe_allow_html=True)
 
 
 # --- 7. DATA EXPLORER PAGE ---
