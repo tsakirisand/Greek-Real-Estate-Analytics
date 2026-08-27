@@ -205,24 +205,27 @@ def get_db_session():
 
 db = get_db_session()
 
-# Fetch Areas with safe table creation and auto-seeding fallback
-try:
-    areas_data = queries.get_all_geographical_areas(db)
-except Exception:
-    areas_data = []
+@st.cache_data(ttl=600, show_spinner=False)
+def fetch_cached_area_options():
+    with SessionLocal() as session:
+        try:
+            areas = queries.get_all_geographical_areas(session)
+        except Exception:
+            areas = []
+        if not areas:
+            try:
+                from database import engine
+                from models import Base
+                from loader import import_all
+                Base.metadata.create_all(bind=engine)
+                import_all()
+                areas = queries.get_all_geographical_areas(session)
+            except Exception:
+                pass
+        return [(a.name, a.slug) for a in areas]
 
-if not areas_data:
-    try:
-        from database import engine
-        from models import Base
-        from loader import import_all
-        Base.metadata.create_all(bind=engine)
-        import_all()
-        areas_data = queries.get_all_geographical_areas(db)
-    except Exception:
-        pass
-
-area_options = {a.name: a.slug for a in areas_data} if areas_data else {"Athens (Αθήνα)": "athens"}
+cached_areas_tuples = fetch_cached_area_options()
+area_options = {name: slug for name, slug in cached_areas_tuples} if cached_areas_tuples else {"Athens (Αθήνα)": "athens"}
 
 # --- Sidebar Controls ---
 st.sidebar.title(t("sidebar_title"))
@@ -944,17 +947,24 @@ elif app_key == "map":
         with open(geojson_path, "r", encoding="utf-8") as f:
             greece_geojson = json.load(f)
             
-        all_metrics = []
-        for area in areas_data:
-            s_res = queries.get_metrics_summary(db, area_slugs=[area.slug])
-            if s_res and "latestIndex" in s_res:
-                all_metrics.append({
-                    "id": area.slug,
-                    "area_name": get_area_name(lang, area.name),
-                    "latest_index": s_res["latestIndex"],
-                    "yoy_change": s_res.get("yoyChange", 0.0),
-                    "latest_quarter": s_res.get("latestQuarter", "—")
-                })
+        @st.cache_data(ttl=600, show_spinner=False)
+        def get_cached_map_metrics(lang_code: str):
+            with SessionLocal() as session:
+                areas = queries.get_all_geographical_areas(session)
+                metrics = []
+                for area in areas:
+                    s_res = queries.get_metrics_summary(session, area_slugs=[area.slug])
+                    if s_res and "latestIndex" in s_res:
+                        metrics.append({
+                            "id": area.slug,
+                            "area_name": get_area_name(lang_code, area.name),
+                            "latest_index": s_res["latestIndex"],
+                            "yoy_change": s_res.get("yoyChange", 0.0),
+                            "latest_quarter": s_res.get("latestQuarter", "—")
+                        })
+                return metrics
+
+        all_metrics = get_cached_map_metrics(lang)
         
         map_df = pd.DataFrame(all_metrics)
         if not map_df.empty:

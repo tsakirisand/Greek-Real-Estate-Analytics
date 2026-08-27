@@ -29,7 +29,7 @@ else:
     db_path = os.path.join(db_dir, "app.db")
     DATABASE_URL = f"sqlite:///{db_path}"
 
-connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {"connect_timeout": 1}
 
 try:
     engine = create_engine(
