@@ -209,7 +209,7 @@ area_options = {a.name: a.slug for a in areas_data} if areas_data else {"Athens 
 st.sidebar.title(t("sidebar_title"))
 
 # Robust Key-based Navigation System (Clean tabbar names in both EN & EL)
-nav_keys = ["dashboard", "insights", "compare", "forecast", "explorer", "provenance"]
+nav_keys = ["dashboard", "insights", "compare", "forecast", "map", "explorer", "provenance"]
 if "app_key" not in st.session_state or st.session_state["app_key"] not in nav_keys:
     st.session_state["app_key"] = "dashboard"
 
@@ -845,7 +845,71 @@ elif app_key == "forecast":
         st.warning("Δεν βρέθηκαν επαρκή στοιχεία για την παραγωγή πρόβλεψης." if lang == "el" else "Insufficient data to generate time series forecast.")
 
 
-# --- 5. DATA EXPLORER PAGE ---
+# --- 5. GREECE REGIONAL MAP PAGE ---
+elif app_key == "map":
+    st.title("🗺️ " + ("Διαδραστικός Χάρτης Περιφερειών Ελλάδας" if lang == "el" else "Interactive Regional Map of Greece"))
+    st.caption("Εξερευνήστε τους δείκτες τιμών και τους ετήσιους ρυθμούς μεταβολής (YoY) ανά περιφέρεια στον διαδραστικό γεωγραφικό χάρτη." if lang == "el" else "Explore price index valuations and Year-over-Year (YoY) growth rates geographically across Greek regions.")
+
+    import json
+    geojson_path = os.path.join(os.path.dirname(__file__), "data", "greece_regions.json")
+    if os.path.exists(geojson_path):
+        with open(geojson_path, "r", encoding="utf-8") as f:
+            greece_geojson = json.load(f)
+            
+        all_metrics = []
+        for area in areas_data:
+            s_res = queries.get_metrics_summary(db, area_slugs=[area.slug])
+            if s_res and "latestIndex" in s_res:
+                all_metrics.append({
+                    "id": area.slug,
+                    "area_name": get_area_name(lang, area.name),
+                    "latest_index": s_res["latestIndex"],
+                    "yoy_change": s_res.get("yoyChange", 0.0),
+                    "latest_quarter": s_res.get("latestQuarter", "—")
+                })
+        
+        map_df = pd.DataFrame(all_metrics)
+        if not map_df.empty:
+            map_metric = st.radio(
+                "Επιλογή Μετρικής Χάρτη" if lang == "el" else "Select Map Metric",
+                ["Δείκτης Τιμών (Price Index)" if lang == "el" else "Price Index", "Ετήσια Μεταβολή % (YoY Growth %)" if lang == "el" else "YoY Growth %"],
+                horizontal=True
+            )
+            color_col = "latest_index" if "Index" in map_metric else "yoy_change"
+            color_scale = "Viridis" if "Index" in map_metric else "RdYlGn"
+
+            fig_map = px.choropleth(
+                map_df,
+                geojson=greece_geojson,
+                locations="id",
+                color=color_col,
+                hover_name="area_name",
+                hover_data={"id": False, "latest_index": ":.1f", "yoy_change": ":+.1f%", "latest_quarter": True},
+                color_continuous_scale=color_scale,
+                labels={"latest_index": t("metric_index"), "yoy_change": "YoY Growth %", "area_name": "Region / Περιοχή"},
+                title=""
+            )
+            fig_map.update_geos(fitbounds="locations", visible=False)
+            fig_map.update_layout(
+                height=520,
+                template=plotly_template,
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                margin=dict(l=10, r=10, t=20, b=10)
+            )
+            st.plotly_chart(fig_map, use_container_width=True)
+
+            st.subheader("📋 " + ("Πίνακας Συγκριτικών Δεικτών ανά Περιοχή" if lang == "el" else "Regional Valuation Summary Table"))
+            tbl_display = map_df[['area_name', 'latest_index', 'yoy_change', 'latest_quarter']].copy()
+            tbl_display.columns = [
+                "Area / Περιοχή", "Price Index / Δείκτης", "YoY Growth % / Ετήσια Μεταβολή %", "Latest Period / Τρίμηνο"
+            ]
+            st.dataframe(tbl_display, use_container_width=True)
+    else:
+        st.warning("Το αρχείο γεωγραφικών ορίων δεν βρέθηκε." if lang == "el" else "GeoJSON boundary file not found.")
+
+
+# --- 6. DATA EXPLORER PAGE ---
 elif app_key == "explorer":
     st.title(t('explorer_title'))
     st.caption(t('explorer_caption'))

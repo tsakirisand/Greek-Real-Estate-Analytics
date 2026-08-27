@@ -1,0 +1,50 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "athens",
+      "properties": { "name": "Athens", "name_el": "Αθήνα", "area_slug": "athens" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[23.5, 37.8], [23.9, 37.8], [23.9, 38.2], [23.5, 38.2], [23.5, 37.8]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "thessaloniki",
+      "properties": { "name": "Thessaloniki", "name_el": "Θεσσαλονίκη", "area_slug": "thessaloniki" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[22.7, 40.4], [23.2, 40.4], [23.2, 40.8], [22.7, 40.8], [22.7, 40.4]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "other_cities",
+      "properties": { "name": "Other Cities", "name_el": "Λοιπές Μεγάλες Πόλεις", "area_slug": "other_cities" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[21.5, 38.0], [22.5, 38.0], [22.5, 39.5], [21.5, 39.5], [21.5, 38.0]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "other_areas",
+      "properties": { "name": "Other Areas", "name_el": "Λοιπές Περιοχές", "area_slug": "other_areas" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[20.5, 39.0], [21.5, 39.0], [21.5, 41.0], [20.5, 41.0], [20.5, 39.0]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "rest_of_greece",
+      "properties": { "name": "Rest of Greece", "name_el": "Λοιπή Ελλάδα", "area_slug": "rest_of_greece" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[24.0, 35.0], [26.0, 35.0], [26.0, 37.0], [24.0, 37.0], [24.0, 35.0]]]
+      }
+    }
+  ]
+}
