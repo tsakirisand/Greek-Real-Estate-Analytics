@@ -954,15 +954,7 @@ elif app_key == "map":
             )
             fig_map.update_geos(
                 fitbounds="locations",
-                visible=True,
-                showcountries=True,
-                countrycolor="#334155",
-                showcoastlines=True,
-                coastlinecolor="#60a5fa",
-                showland=True,
-                landcolor="#1e293b",
-                showocean=True,
-                oceancolor="#0f172a"
+                visible=False
             )
             fig_map.update_layout(
                 height=540,
