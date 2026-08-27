@@ -226,3 +226,19 @@ def api_get_forecast(
         raise HTTPException(status_code=404, detail=f"No price index data available for forecast area: {areaId}")
     return {"success": True, "data": res}
 
+@app.get("/api/export/pdf")
+def api_export_pdf(
+    lang: str = Query("en"),
+    db: Session = Depends(get_db)
+):
+    from report_generator import generate_pdf_report
+    pdf_bytes = generate_pdf_report(db, lang=lang)
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename=greek_real_estate_executive_report_{datetime.now().strftime('%Y%m%d')}.pdf"
+        }
+    )
+
+

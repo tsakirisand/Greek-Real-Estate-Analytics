@@ -287,6 +287,17 @@ metric_option = st.sidebar.selectbox(
 st.sidebar.markdown("---")
 st.sidebar.caption("Source: Bank of Greece / Τράπεζα της Ελλάδος")
 
+from report_generator import generate_pdf_report
+pdf_data = generate_pdf_report(db, lang=lang)
+st.sidebar.download_button(
+    label="📄 " + ("Λήψη Αναφοράς PDF" if lang == "el" else "Download Executive PDF"),
+    data=pdf_data,
+    file_name=f"greek_real_estate_executive_report_{datetime.now().strftime('%Y%m%d')}.pdf",
+    mime="application/pdf",
+    use_container_width=True
+)
+
+
 
 # Fetch Active Data
 rows = queries.get_price_indices(
