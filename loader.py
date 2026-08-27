@@ -32,14 +32,28 @@ def download_or_get_local_file(url: str, local_name: str) -> str:
     if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
         return file_path
 
+    # Check fallback path in data/downloads
+    fallback_path = os.path.join(os.path.dirname(__file__), "data", "downloads", local_name)
+    if os.path.exists(fallback_path) and os.path.getsize(fallback_path) > 0:
+        return fallback_path
+
     logger.info(f"Downloading resource from {url} -> {file_path}")
-    response = requests.get(url, verify=False, timeout=30)
-    response.raise_for_status()
-
-    with open(file_path, "wb") as f:
-        f.write(response.content)
-
-    return file_path
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "el-GR,el;q=0.9,en-US;q=0.8,en;q=0.7"
+    }
+    try:
+        response = requests.get(url, headers=headers, verify=False, timeout=30)
+        response.raise_for_status()
+        with open(file_path, "wb") as f:
+            f.write(response.content)
+        return file_path
+    except Exception as e:
+        logger.warning(f"Download failed for {url} ({e}). Searching local files...")
+        if os.path.exists(fallback_path) and os.path.getsize(fallback_path) > 0:
+            return fallback_path
+        raise e
 
 # Greek Geographical Regions definitions
 GEOGRAPHICAL_REGIONS = [

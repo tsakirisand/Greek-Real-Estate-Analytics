@@ -15,7 +15,8 @@ app.log
 
 # Project specific data directories
 pgdata/
-downloads/
+!downloads/*.xls
+
 
 # IDE / OS specific
 .DS_Store
