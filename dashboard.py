@@ -209,7 +209,7 @@ area_options = {a.name: a.slug for a in areas_data} if areas_data else {"Athens 
 st.sidebar.title(t("sidebar_title"))
 
 # Robust Key-based Navigation System (Clean tabbar names in both EN & EL)
-nav_keys = ["dashboard", "insights", "compare", "forecast", "map", "explorer", "provenance"]
+nav_keys = ["dashboard", "insights", "compare", "forecast", "map", "calc", "explorer", "provenance"]
 if "app_key" not in st.session_state or st.session_state["app_key"] not in nav_keys:
     st.session_state["app_key"] = "dashboard"
 
@@ -909,7 +909,69 @@ elif app_key == "map":
         st.warning("Το αρχείο γεωγραφικών ορίων δεν βρέθηκε." if lang == "el" else "GeoJSON boundary file not found.")
 
 
-# --- 6. DATA EXPLORER PAGE ---
+# --- 6. INVESTOR ROI & MORTGAGE CALCULATOR PAGE ---
+elif app_key == "calc":
+    st.title("🧮 " + ("Υπολογιστής Απόδοσης Επένδυσης & Στεγαστικού Δανείου" if lang == "el" else "Real Estate Investment & Mortgage Calculator"))
+    st.caption("Υπολογίστε την καθαρή απόδοση ενοικίασης (Cap Rate), τους φόρους (ΕΝΦΙΑ), τη μηνιαία δόση δανείου και το Cash-on-Cash Return." if lang == "el" else "Calculate Gross Yield, Net Cap Rate, ENFIA tax, monthly mortgage payments, and Cash-on-Cash return for Greek properties.")
+
+    from calculator import calculate_investment_metrics
+
+    p1, p2, p3 = st.columns(3)
+    with p1:
+        prop_price = st.number_input("Αξία Ακινήτου (€)" if lang == "el" else "Property Price (€)", value=200000.0, step=5000.0)
+        m_rent = st.number_input("Μηνιαίο Ενοίκιο (€)" if lang == "el" else "Monthly Rent (€)", value=900.0, step=50.0)
+    with p2:
+        down_pct = st.slider("Ιδία Συμμετοχή / Προκαταβολή (%)" if lang == "el" else "Down Payment (%)", min_value=0.0, max_value=100.0, value=25.0, step=5.0)
+        rate_pct = st.number_input("Επιτόκιο Δανείου (%)" if lang == "el" else "Interest Rate (%)", value=3.8, step=0.1)
+    with p3:
+        duration_yrs = st.slider("Διάρκεια Δανείου (Έτη)" if lang == "el" else "Loan Duration (Years)", min_value=5, max_value=35, value=25, step=1)
+        enfia_val = st.number_input("Ετήσιος ΕΝΦΙΑ (€)" if lang == "el" else "Annual ENFIA Tax (€)", value=450.0, step=50.0)
+
+    calc_res = calculate_investment_metrics(
+        property_price=prop_price,
+        monthly_rent=m_rent,
+        down_payment_pct=down_pct,
+        interest_rate_pct=rate_pct,
+        loan_years=duration_yrs,
+        annual_enfia_tax=enfia_val,
+        annual_maintenance_pct=1.0
+    )
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    m1, m2, m3, m4, m5 = st.columns(5)
+    with m1:
+        st.metric("Gross Yield", f"{calc_res['grossYieldPct']:.2f}%")
+    with m2:
+        st.metric("Net Cap Rate", f"{calc_res['netCapRatePct']:.2f}%", f"-€{calc_res['annualEnfia'] + calc_res['annualMaintenance']:.0f}/yr tax")
+    with m3:
+        st.metric("Μηνιαία Δόση" if lang == "el" else "Monthly Mortgage", f"€{calc_res['monthlyMortgage']:.2f}")
+    with m4:
+        cf = calc_res['netMonthlyCashFlow']
+        st.metric("Καθαρή Ταμειακή Ροή/μήνα" if lang == "el" else "Net Cash Flow/mo", f"€{cf:.2f}")
+    with m5:
+        st.metric("Cash-on-Cash Return", f"{calc_res['cashOnCashPct']:.2f}%")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.subheader("📊 " + ("Πίνακας Απόσβεσης Δανείου ανά Έτος" if lang == "el" else "Annual Mortgage Amortization Schedule"))
+    amort_df = pd.DataFrame(calc_res['amortizationSchedule'])
+    if not amort_df.empty:
+        fig_amort = go.Figure()
+        fig_amort.add_trace(go.Scatter(x=amort_df['year'], y=amort_df['remainingBalance'], mode='lines+markers', name='Υπόλοιπο Δανείου (€)' if lang == 'el' else 'Remaining Balance (€)', line=dict(color='#3b82f6', width=3)))
+        fig_amort.add_trace(go.Scatter(x=amort_df['year'], y=amort_df['cumulativeInterest'], mode='lines', name='Συσσωρευμένοι Τόκοι (€)' if lang == 'el' else 'Cumulative Interest (€)', line=dict(color='#f43f5e', width=2, dash='dash')))
+        fig_amort.update_layout(
+            height=380,
+            template=plotly_template,
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            xaxis=dict(showgrid=True, gridcolor=grid_color, title="Year / Έτος"),
+            yaxis=dict(showgrid=True, gridcolor=grid_color, title="Amount (€)"),
+            margin=dict(l=20, r=20, t=20, b=20)
+        )
+        st.plotly_chart(fig_amort, use_container_width=True)
+        st.dataframe(amort_df, use_container_width=True)
+
+
+# --- 7. DATA EXPLORER PAGE ---
 elif app_key == "explorer":
     st.title(t('explorer_title'))
     st.caption(t('explorer_caption'))
