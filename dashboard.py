@@ -15,362 +15,183 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-# --- Sidebar Language & Theme Controls ---
+# --- Sidebar Language Toggle ---
 lang_selection = st.sidebar.selectbox(
     "🌐 Language / Γλώσσα",
     ["Ελληνικά 🇬🇷", "English 🇬🇧"]
 )
 lang = "el" if "Ελληνικά" in lang_selection else "en"
-
-theme_selection = st.sidebar.radio(
-    "🎨 Theme / Θέμα",
-    ["🌙 Dark", "☀️ Light"],
-    horizontal=True
-)
-is_light_mode = "Light" in theme_selection
-plotly_template = "plotly_white" if is_light_mode else "plotly_dark"
-grid_color = "#e2e8f0" if is_light_mode else "#1e293b"
+plotly_template = "plotly_dark"
+grid_color = "#1e293b"
 
 t = lambda key: get_text(lang, key)
 
-# Dynamic Custom UI Styling - Dark & Light Theme Support
-if is_light_mode:
-    custom_css = """
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
+# Custom UI Styling - Dark Theme Glassmorphism
+custom_css = """
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
 
-        .stApp {
-            background: #f8fafc !important;
-            color: #0f172a !important;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        }
-        section[data-testid="stSidebar"] {
-            background-color: #ffffff !important;
-            border-right: 1px solid #e2e8f0 !important;
-        }
-        section[data-testid="stSidebar"] div.stButton { width: 100% !important; }
-        section[data-testid="stSidebar"] div.stButton > button {
-            width: 100% !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: flex-start !important;
-            text-align: left !important;
-            padding: 8px 12px !important;
-            margin-bottom: 3px !important;
-            transition: all 0.18s ease-in-out !important;
-        }
-        section[data-testid="stSidebar"] div.stButton > button > div {
-            display: flex !important;
-            align-items: center !important;
-            justify-content: flex-start !important;
-            width: 100% !important;
-            text-align: left !important;
-        }
-        section[data-testid="stSidebar"] div.stButton > button p,
-        section[data-testid="stSidebar"] div.stButton > button div[data-testid="stMarkdownContainer"] p {
-            text-align: left !important;
-            width: 100% !important;
-            justify-content: flex-start !important;
-            margin: 0 !important;
-        }
-        section[data-testid="stSidebar"] div.stButton > button[kind="primary"],
-        section[data-testid="stSidebar"] div.stButton > button[data-testid="baseButton-primary"] {
-            background: #2563eb !important;
-            border: none !important;
-            border-radius: 8px !important;
-            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25) !important;
-        }
-        section[data-testid="stSidebar"] div.stButton > button[kind="primary"] p,
-        section[data-testid="stSidebar"] div.stButton > button[data-testid="baseButton-primary"] p {
-            color: #ffffff !important;
-            font-weight: 700 !important;
-            font-size: 14.5px !important;
-        }
-        section[data-testid="stSidebar"] div.stButton > button[kind="secondary"],
-        section[data-testid="stSidebar"] div.stButton > button[data-testid="baseButton-secondary"] {
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-        }
-        section[data-testid="stSidebar"] div.stButton > button[kind="secondary"] p,
-        section[data-testid="stSidebar"] div.stButton > button[data-testid="baseButton-secondary"] p {
-            color: #475569 !important;
-            font-weight: 500 !important;
-            font-size: 14.5px !important;
-        }
-        section[data-testid="stSidebar"] div.stButton > button[kind="secondary"]:hover,
-        section[data-testid="stSidebar"] div.stButton > button[data-testid="baseButton-secondary"]:hover {
-            background: rgba(37, 99, 235, 0.08) !important;
-            border-radius: 8px !important;
-        }
-        section[data-testid="stSidebar"] div.stButton > button[kind="secondary"]:hover p,
-        section[data-testid="stSidebar"] div.stButton > button[data-testid="baseButton-secondary"]:hover p {
-            color: #1d4ed8 !important;
-        }
-        .header-card {
-            background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%) !important;
-            border: 1px solid #cbd5e1 !important;
-            backdrop-filter: blur(12px);
-            border-radius: 20px;
-            padding: 28px 32px;
-            margin-bottom: 28px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-        }
-        .header-card h1 { color: #0f172a !important; }
-        .header-card p { color: #475569 !important; }
-        .metric-card {
-            background: #ffffff !important;
-            border: 1px solid #e2e8f0 !important;
-            backdrop-filter: blur(8px);
-            border-radius: 16px;
-            padding: 20px 24px;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.25s ease;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-        .metric-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; height: 3px;
-            background: linear-gradient(90deg, #2563eb, #3b82f6);
-            opacity: 0.8;
-        }
-        .metric-card:hover {
-            border-color: #2563eb !important;
-            transform: translateY(-4px);
-            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.15);
-        }
-        .metric-title {
-            font-size: 11px; font-weight: 700; text-transform: uppercase;
-            letter-spacing: 0.08em; color: #64748b;
-        }
-        .metric-value {
-            font-size: 30px; font-weight: 800; color: #0f172a !important;
-            margin-top: 6px; margin-bottom: 4px; font-family: 'JetBrains Mono', monospace;
-        }
-        .metric-subtitle { font-size: 12px; font-weight: 600; }
-        .text-emerald { color: #059669 !important; }
-        .text-rose { color: #e11d48 !important; }
-        .text-blue { color: #2563eb !important; }
-        .text-amber { color: #d97706 !important; }
+    .stApp {
+        background: radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 100%) !important;
+        color: #f8fafc !important;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    section[data-testid="stSidebar"] {
+        background-color: #111827 !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+    }
+    section[data-testid="stSidebar"] div.stButton { width: 100% !important; }
+    section[data-testid="stSidebar"] div.stButton > button {
+        width: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        text-align: left !important;
+        padding: 8px 12px !important;
+        margin-bottom: 3px !important;
+        transition: all 0.18s ease-in-out !important;
+    }
+    section[data-testid="stSidebar"] div.stButton > button > div {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        width: 100% !important;
+        text-align: left !important;
+    }
+    section[data-testid="stSidebar"] div.stButton > button p,
+    section[data-testid="stSidebar"] div.stButton > button div[data-testid="stMarkdownContainer"] p {
+        text-align: left !important;
+        width: 100% !important;
+        justify-content: flex-start !important;
+        margin: 0 !important;
+    }
+    section[data-testid="stSidebar"] div.stButton > button[kind="primary"],
+    section[data-testid="stSidebar"] div.stButton > button[data-testid="baseButton-primary"] {
+        background: #e2eafc !important;
+        border: none !important;
+        border-radius: 8px !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+    }
+    section[data-testid="stSidebar"] div.stButton > button[kind="primary"] p,
+    section[data-testid="stSidebar"] div.stButton > button[data-testid="baseButton-primary"] p {
+        color: #0f172a !important;
+        font-weight: 700 !important;
+        font-size: 14.5px !important;
+    }
+    section[data-testid="stSidebar"] div.stButton > button[kind="secondary"],
+    section[data-testid="stSidebar"] div.stButton > button[data-testid="baseButton-secondary"] {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+    section[data-testid="stSidebar"] div.stButton > button[kind="secondary"] p,
+    section[data-testid="stSidebar"] div.stButton > button[data-testid="baseButton-secondary"] p {
+        color: #94a3b8 !important;
+        font-weight: 500 !important;
+        font-size: 14.5px !important;
+    }
+    section[data-testid="stSidebar"] div.stButton > button[kind="secondary"]:hover,
+    section[data-testid="stSidebar"] div.stButton > button[data-testid="baseButton-secondary"]:hover {
+        background: rgba(226, 234, 252, 0.08) !important;
+        border-radius: 8px !important;
+    }
+    section[data-testid="stSidebar"] div.stButton > button[kind="secondary"]:hover p,
+    section[data-testid="stSidebar"] div.stButton > button[data-testid="baseButton-secondary"]:hover p {
+        color: #ffffff !important;
+    }
+    .header-card {
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%) !important;
+        border: 1px solid rgba(51, 65, 85, 0.9) !important;
+        backdrop-filter: blur(12px);
+        border-radius: 20px;
+        padding: 28px 32px;
+        margin-bottom: 28px;
+        box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.4);
+    }
+    .metric-card {
+        background: rgba(30, 41, 59, 0.7) !important;
+        border: 1px solid rgba(51, 65, 85, 0.8) !important;
+        backdrop-filter: blur(8px);
+        border-radius: 16px;
+        padding: 20px 24px;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.25s ease;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .metric-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; height: 3px;
+        background: linear-gradient(90deg, #3b82f6, #60a5fa);
+        opacity: 0.8;
+    }
+    .metric-card:hover {
+        border-color: #3b82f6 !important;
+        transform: translateY(-4px);
+        box-shadow: 0 8px 20px rgba(59, 130, 246, 0.2);
+    }
+    .metric-title {
+        font-size: 11px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.08em; color: #94a3b8;
+    }
+    .metric-value {
+        font-size: 30px; font-weight: 800; color: #ffffff !important;
+        margin-top: 6px; margin-bottom: 4px; font-family: 'JetBrains Mono', monospace;
+    }
+    .metric-subtitle { font-size: 12px; font-weight: 600; }
+    .text-emerald { color: #10b981 !important; }
+    .text-rose { color: #f43f5e !important; }
+    .text-blue { color: #3b82f6 !important; }
+    .text-amber { color: #f59e0b !important; }
 
-        .insights-card {
-            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
-            border: 1px solid rgba(37, 99, 235, 0.3) !important;
-            border-radius: 16px; padding: 24px; margin-top: 24px; margin-bottom: 24px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
-        }
-        .insights-card h3 { color: #1d4ed8 !important; }
-        .insights-card p { color: #64748b !important; }
-        .insight-item {
-            background: #f1f5f9 !important;
-            border-left: 4px solid #2563eb;
-            border-radius: 8px; padding: 16px; margin-bottom: 14px;
-        }
-        .insight-item-title {
-            font-size: 14.5px; font-weight: 700; color: #1d4ed8 !important;
-            margin-bottom: 6px; display: flex; align-items: center; gap: 8px;
-        }
-        .insight-item-text { font-size: 13.5px; color: #334155 !important; line-height: 1.65; }
+    .insights-card {
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 41, 59, 0.7) 100%) !important;
+        border: 1px solid rgba(59, 130, 246, 0.3) !important;
+        border-radius: 16px; padding: 24px; margin-top: 24px; margin-bottom: 24px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    }
+    .insight-item {
+        background: rgba(15, 23, 42, 0.6) !important;
+        border-left: 4px solid #3b82f6;
+        border-radius: 8px; padding: 16px; margin-bottom: 14px;
+    }
+    .insight-item-title {
+        font-size: 14.5px; font-weight: 700; color: #60a5fa !important;
+        margin-bottom: 6px; display: flex; align-items: center; gap: 8px;
+    }
+    .insight-item-text { font-size: 13.5px; color: #cbd5e1 !important; line-height: 1.65; }
 
-        .analyst-card {
-            background: #ffffff !important;
-            border: 1px solid #cbd5e1 !important;
-            border-radius: 16px; padding: 24px; margin-bottom: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
-        }
-        .analyst-card-title {
-            font-size: 18px; font-weight: 800; color: #1d4ed8 !important;
-            margin-bottom: 12px; display: flex; align-items: center; gap: 10px;
-        }
-        .analyst-card-text { font-size: 14.5px; line-height: 1.7; color: #334155 !important; }
+    .analyst-card {
+        background: rgba(15, 23, 42, 0.8) !important;
+        border: 1px solid rgba(51, 65, 85, 0.7) !important;
+        border-radius: 16px; padding: 24px; margin-bottom: 20px;
+    }
+    .analyst-card-title {
+        font-size: 18px; font-weight: 800; color: #60a5fa !important;
+        margin-bottom: 12px; display: flex; align-items: center; gap: 10px;
+    }
+    .analyst-card-text { font-size: 14.5px; line-height: 1.7; color: #cbd5e1 !important; }
 
-        .chart-insight-box {
-            background: #f1f5f9 !important;
-            border-left: 3px solid #2563eb;
-            border-radius: 6px; padding: 12px 16px; font-size: 13.5px;
-            color: #334155 !important; margin-top: 10px; margin-bottom: 20px; line-height: 1.6;
-        }
-        .badge-provisional {
-            background: rgba(217, 119, 6, 0.15); color: #d97706;
-            border: 1px solid rgba(217, 119, 6, 0.3); padding: 4px 12px; border-radius: 20px;
-            font-size: 12px; font-weight: 600;
-        }
-        .badge-source {
-            background: rgba(37, 99, 235, 0.15); color: #2563eb;
-            border: 1px solid rgba(37, 99, 235, 0.3); padding: 4px 12px; border-radius: 20px;
-            font-size: 12px; font-weight: 600;
-        }
-        .stMultiSelect, .stSelectbox { margin-bottom: 12px; }
-    </style>
-    """
-else:
-    custom_css = """
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
-
-        .stApp {
-            background: radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 100%) !important;
-            color: #f8fafc !important;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        }
-        section[data-testid="stSidebar"] {
-            background-color: #111827 !important;
-            border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
-        }
-        section[data-testid="stSidebar"] div.stButton { width: 100% !important; }
-        section[data-testid="stSidebar"] div.stButton > button {
-            width: 100% !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: flex-start !important;
-            text-align: left !important;
-            padding: 8px 12px !important;
-            margin-bottom: 3px !important;
-            transition: all 0.18s ease-in-out !important;
-        }
-        section[data-testid="stSidebar"] div.stButton > button > div {
-            display: flex !important;
-            align-items: center !important;
-            justify-content: flex-start !important;
-            width: 100% !important;
-            text-align: left !important;
-        }
-        section[data-testid="stSidebar"] div.stButton > button p,
-        section[data-testid="stSidebar"] div.stButton > button div[data-testid="stMarkdownContainer"] p {
-            text-align: left !important;
-            width: 100% !important;
-            justify-content: flex-start !important;
-            margin: 0 !important;
-        }
-        section[data-testid="stSidebar"] div.stButton > button[kind="primary"],
-        section[data-testid="stSidebar"] div.stButton > button[data-testid="baseButton-primary"] {
-            background: #e2eafc !important;
-            border: none !important;
-            border-radius: 8px !important;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
-        }
-        section[data-testid="stSidebar"] div.stButton > button[kind="primary"] p,
-        section[data-testid="stSidebar"] div.stButton > button[data-testid="baseButton-primary"] p {
-            color: #0f172a !important;
-            font-weight: 700 !important;
-            font-size: 14.5px !important;
-        }
-        section[data-testid="stSidebar"] div.stButton > button[kind="secondary"],
-        section[data-testid="stSidebar"] div.stButton > button[data-testid="baseButton-secondary"] {
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-        }
-        section[data-testid="stSidebar"] div.stButton > button[kind="secondary"] p,
-        section[data-testid="stSidebar"] div.stButton > button[data-testid="baseButton-secondary"] p {
-            color: #94a3b8 !important;
-            font-weight: 500 !important;
-            font-size: 14.5px !important;
-        }
-        section[data-testid="stSidebar"] div.stButton > button[kind="secondary"]:hover,
-        section[data-testid="stSidebar"] div.stButton > button[data-testid="baseButton-secondary"]:hover {
-            background: rgba(226, 234, 252, 0.08) !important;
-            border-radius: 8px !important;
-        }
-        section[data-testid="stSidebar"] div.stButton > button[kind="secondary"]:hover p,
-        section[data-testid="stSidebar"] div.stButton > button[data-testid="baseButton-secondary"]:hover p {
-            color: #ffffff !important;
-        }
-        .header-card {
-            background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%) !important;
-            border: 1px solid rgba(51, 65, 85, 0.9) !important;
-            backdrop-filter: blur(12px);
-            border-radius: 20px;
-            padding: 28px 32px;
-            margin-bottom: 28px;
-            box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.4);
-        }
-        .metric-card {
-            background: rgba(30, 41, 59, 0.7) !important;
-            border: 1px solid rgba(51, 65, 85, 0.8) !important;
-            backdrop-filter: blur(8px);
-            border-radius: 16px;
-            padding: 20px 24px;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.25s ease;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-        .metric-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; height: 3px;
-            background: linear-gradient(90deg, #3b82f6, #60a5fa);
-            opacity: 0.8;
-        }
-        .metric-card:hover {
-            border-color: #3b82f6 !important;
-            transform: translateY(-4px);
-            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.2);
-        }
-        .metric-title {
-            font-size: 11px; font-weight: 700; text-transform: uppercase;
-            letter-spacing: 0.08em; color: #94a3b8;
-        }
-        .metric-value {
-            font-size: 30px; font-weight: 800; color: #ffffff !important;
-            margin-top: 6px; margin-bottom: 4px; font-family: 'JetBrains Mono', monospace;
-        }
-        .metric-subtitle { font-size: 12px; font-weight: 600; }
-        .text-emerald { color: #10b981 !important; }
-        .text-rose { color: #f43f5e !important; }
-        .text-blue { color: #3b82f6 !important; }
-        .text-amber { color: #f59e0b !important; }
-
-        .insights-card {
-            background: linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 41, 59, 0.7) 100%) !important;
-            border: 1px solid rgba(59, 130, 246, 0.3) !important;
-            border-radius: 16px; padding: 24px; margin-top: 24px; margin-bottom: 24px;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-        }
-        .insight-item {
-            background: rgba(15, 23, 42, 0.6) !important;
-            border-left: 4px solid #3b82f6;
-            border-radius: 8px; padding: 16px; margin-bottom: 14px;
-        }
-        .insight-item-title {
-            font-size: 14.5px; font-weight: 700; color: #60a5fa !important;
-            margin-bottom: 6px; display: flex; align-items: center; gap: 8px;
-        }
-        .insight-item-text { font-size: 13.5px; color: #cbd5e1 !important; line-height: 1.65; }
-
-        .analyst-card {
-            background: rgba(15, 23, 42, 0.8) !important;
-            border: 1px solid rgba(51, 65, 85, 0.7) !important;
-            border-radius: 16px; padding: 24px; margin-bottom: 20px;
-        }
-        .analyst-card-title {
-            font-size: 18px; font-weight: 800; color: #60a5fa !important;
-            margin-bottom: 12px; display: flex; align-items: center; gap: 10px;
-        }
-        .analyst-card-text { font-size: 14.5px; line-height: 1.7; color: #cbd5e1 !important; }
-
-        .chart-insight-box {
-            background: rgba(30, 41, 59, 0.5) !important;
-            border-left: 3px solid #3b82f6;
-            border-radius: 6px; padding: 12px 16px; font-size: 13.5px;
-            color: #e2e8f0 !important; margin-top: 10px; margin-bottom: 20px; line-height: 1.6;
-        }
-        .badge-provisional {
-            background: rgba(245, 158, 11, 0.15); color: #fbbf24;
-            border: 1px solid rgba(245, 158, 11, 0.3); padding: 4px 12px; border-radius: 20px;
-            font-size: 12px; font-weight: 600;
-        }
-        .badge-source {
-            background: rgba(59, 130, 246, 0.15); color: #60a5fa;
-            border: 1px solid rgba(59, 130, 246, 0.3); padding: 4px 12px; border-radius: 20px;
-            font-size: 12px; font-weight: 600;
-        }
-        .stMultiSelect, .stSelectbox { margin-bottom: 12px; }
-    </style>
-    """
+    .chart-insight-box {
+        background: rgba(30, 41, 59, 0.5) !important;
+        border-left: 3px solid #3b82f6;
+        border-radius: 6px; padding: 12px 16px; font-size: 13.5px;
+        color: #e2e8f0 !important; margin-top: 10px; margin-bottom: 20px; line-height: 1.6;
+    }
+    .badge-provisional {
+        background: rgba(245, 158, 11, 0.15); color: #fbbf24;
+        border: 1px solid rgba(245, 158, 11, 0.3); padding: 4px 12px; border-radius: 20px;
+        font-size: 12px; font-weight: 600;
+    }
+    .badge-source {
+        background: rgba(59, 130, 246, 0.15); color: #60a5fa;
+        border: 1px solid rgba(59, 130, 246, 0.3); padding: 4px 12px; border-radius: 20px;
+        font-size: 12px; font-weight: 600;
+    }
+    .stMultiSelect, .stSelectbox { margin-bottom: 12px; }
+</style>
+"""
 
 st.markdown(custom_css, unsafe_allow_html=True)
 
