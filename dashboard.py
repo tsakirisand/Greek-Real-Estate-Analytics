@@ -209,7 +209,7 @@ area_options = {a.name: a.slug for a in areas_data} if areas_data else {"Athens 
 st.sidebar.title(t("sidebar_title"))
 
 # Robust Key-based Navigation System (Clean tabbar names in both EN & EL)
-nav_keys = ["dashboard", "insights", "compare", "explorer", "provenance"]
+nav_keys = ["dashboard", "insights", "compare", "forecast", "explorer", "provenance"]
 if "app_key" not in st.session_state or st.session_state["app_key"] not in nav_keys:
     st.session_state["app_key"] = "dashboard"
 
@@ -719,7 +719,133 @@ elif app_key == "compare":
             st.table(pd.DataFrame(summary_rows))
 
 
-# --- 4. DATA EXPLORER PAGE ---
+# --- 4. ML FORECAST PAGE ---
+elif app_key == "forecast":
+    st.title("🔮 " + ("Πρόβλεψη Τιμών Ακινήτων (ML Forecasting)" if lang == "el" else "Machine Learning Price Index Forecasting"))
+    st.caption("Πρόβλεψη της πορείας των δεικτών τιμών διαμερισμάτων 1–3 έτη στο μέλλον με χρήση Holt's Linear Exponential Smoothing & 95% ζωνών εμπιστοσύνης." if lang == "el" else "Statistical time-series forecasting of apartment price indices 1–3 years ahead using Holt's Linear Exponential Smoothing with 95% confidence intervals.")
+
+    c_area, c_horizon = st.columns([2, 1])
+    with c_area:
+        forecast_area_name = st.selectbox(
+            t("geo_areas"),
+            options=list(localized_area_options.keys()),
+            index=0
+        )
+        forecast_slug = localized_area_options[forecast_area_name]
+    
+    with c_horizon:
+        horizon_years = st.select_slider(
+            "Ορίζοντας Πρόβλεψης (Έτη)" if lang == "el" else "Forecast Horizon (Years)",
+            options=[1, 2, 3],
+            value=3
+        )
+        forecast_quarters = horizon_years * 4
+
+    from forecasting import generate_area_forecast
+    f_res = generate_area_forecast(db, area_slug=forecast_slug, forecast_quarters=forecast_quarters)
+    
+    if f_res and "forecastData" in f_res:
+        summary = f_res["summary"]
+        hist_df = pd.DataFrame(f_res["historicalData"])
+        fc_df = pd.DataFrame(f_res["forecastData"])
+
+        # KPI metric cards
+        m1, m2, m3, m4 = st.columns(4)
+        with m1:
+            st.metric(
+                "Τελευταίος Δείκτης" if lang == "el" else "Latest Actual Index",
+                f"{summary['latestIndex']:.1f}",
+                summary['latestPeriod']
+            )
+        with m2:
+            st.metric(
+                "Πρόβλεψη 1 Έτους" if lang == "el" else "1-Year Projected Index",
+                f"{summary['forecast1yIndex']:.1f}",
+                f"{summary['forecast1yGrowthPct']:+.1f}%"
+            )
+        with m3:
+            st.metric(
+                "Πρόβλεψη 3 Ετών" if lang == "el" else "3-Year Projected Index",
+                f"{summary['forecast3yIndex']:.1f}",
+                f"{summary['forecast3yGrowthPct']:+.1f}%"
+            )
+        with m4:
+            st.metric(
+                "Μοντέλο ML" if lang == "el" else "ML Model",
+                "Holt Exponential",
+                "Confidence 95%"
+            )
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.subheader("📈 " + ("Γράφημα Πρόβλεψης & Ζώνη Εμπιστοσύνης 95%" if lang == "el" else "Price Forecast & 95% Confidence Interval"))
+
+        # Build combined Plotly Chart
+        hist_df['periodLabel'] = hist_df.apply(lambda r: f"{r['year']} Q{r['quarter']}", axis=1)
+        
+        fig_fc = go.Figure()
+        
+        # Historical Actual Line
+        fig_fc.add_trace(go.Scatter(
+            x=hist_df['periodLabel'],
+            y=hist_df['priceIndex'],
+            mode='lines+markers',
+            name='Ιστορικά Στοιχεία' if lang == 'el' else 'Historical Actuals',
+            line=dict(color='#3b82f6', width=2.5)
+        ))
+
+        # Upper Bound
+        fig_fc.add_trace(go.Scatter(
+            x=fc_df['periodLabel'],
+            y=fc_df['upperBound'],
+            mode='lines',
+            name='Ανώτατο Όριο 95%' if lang == 'el' else 'Upper Bound 95%',
+            line=dict(color='rgba(16, 185, 129, 0.4)', width=1, dash='dot'),
+            showlegend=False
+        ))
+
+        # Lower Bound (with shaded fill)
+        fig_fc.add_trace(go.Scatter(
+            x=fc_df['periodLabel'],
+            y=fc_df['lowerBound'],
+            mode='lines',
+            name='Ζώνη Εμπιστοσύνης 95%' if lang == 'el' else '95% Confidence Interval',
+            fill='tonexty',
+            fillcolor='rgba(16, 185, 129, 0.15)',
+            line=dict(color='rgba(16, 185, 129, 0.4)', width=1, dash='dot')
+        ))
+
+        # Point Forecast Line
+        fig_fc.add_trace(go.Scatter(
+            x=fc_df['periodLabel'],
+            y=fc_df['forecastIndex'],
+            mode='lines+markers',
+            name='Πρόβλεψη (Forecast)' if lang == 'el' else 'ML Point Forecast',
+            line=dict(color='#10b981', width=3, dash='dash')
+        ))
+
+        fig_fc.update_layout(
+            height=460,
+            template=plotly_template,
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            xaxis=dict(showgrid=True, gridcolor=grid_color),
+            yaxis=dict(showgrid=True, gridcolor=grid_color, title="Price Index (Base 2021=100)"),
+            margin=dict(l=20, r=20, t=30, b=20)
+        )
+        st.plotly_chart(fig_fc, use_container_width=True)
+
+        st.subheader("📋 " + ("Πίνακας Προβλέψεων ανά Τρίμηνο" if lang == "el" else "Quarterly Forecast Breakdown"))
+        fc_display = fc_df[['periodLabel', 'forecastIndex', 'lowerBound', 'upperBound', 'cumulativeGrowthPct']].copy()
+        fc_display.columns = [
+            "Period / Τρίμηνο", "Forecast Index / Πρόβλεψη",
+            "Lower Bound 95%", "Upper Bound 95%", "Cumulative Growth % / Αθροιστική Ανάπτυξη %"
+        ]
+        st.dataframe(fc_display, use_container_width=True)
+    else:
+        st.warning("Δεν βρέθηκαν επαρκή στοιχεία για την παραγωγή πρόβλεψης." if lang == "el" else "Insufficient data to generate time series forecast.")
+
+
+# --- 5. DATA EXPLORER PAGE ---
 elif app_key == "explorer":
     st.title(t('explorer_title'))
     st.caption(t('explorer_caption'))

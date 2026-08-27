@@ -213,3 +213,16 @@ def api_export_csv(
             "Content-Disposition": f"attachment; filename=greek_real_estate_{datetime.now().strftime('%Y%m%d')}.csv"
         }
     )
+
+@app.get("/api/forecast")
+def api_get_forecast(
+    areaId: str = Query("athens"),
+    quarters: int = Query(12, ge=1, le=20),
+    db: Session = Depends(get_db)
+):
+    from forecasting import generate_area_forecast
+    res = generate_area_forecast(db, area_slug=areaId, forecast_quarters=quarters)
+    if not res:
+        raise HTTPException(status_code=404, detail=f"No price index data available for forecast area: {areaId}")
+    return {"success": True, "data": res}
+
