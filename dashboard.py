@@ -205,8 +205,19 @@ def get_db_session():
 
 db = get_db_session()
 
-# Fetch Areas
+# Fetch Areas with auto-seeding fallback
 areas_data = queries.get_all_geographical_areas(db)
+if not areas_data:
+    try:
+        from database import engine
+        from models import Base
+        from loader import import_all
+        Base.metadata.create_all(bind=engine)
+        import_all()
+        areas_data = queries.get_all_geographical_areas(db)
+    except Exception as e:
+        pass
+
 area_options = {a.name: a.slug for a in areas_data} if areas_data else {"Athens (Αθήνα)": "athens"}
 
 # --- Sidebar Controls ---
