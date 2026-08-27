@@ -131,48 +131,60 @@ def get_metrics_summary(
     area_slugs: Optional[List[str]] = None,
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
+    granularity: str = "quarterly"
 ):
-    rows = get_price_indices(db, area_slugs=area_slugs, start_date=start_date, end_date=end_date)
+    rows = get_price_indices(db, area_slugs=area_slugs, start_date=start_date, end_date=end_date, granularity=granularity)
     if not rows:
         return {
             "latestIndex": 0,
             "latestQuarter": "N/A",
             "latestYear": 0,
-            "qoqChange": 0,
-            "yoyChange": 0,
+            "firstPeriod": "N/A",
+            "qoqChange": None,
+            "yoyChange": None,
             "cumulativeChange": 0,
-            "marketDirection": "Stable",
             "isProvisional": False,
-            "lastUpdatedDate": None,
-            "resourceName": None,
-            "totalObservations": 0,
-            "firstPeriod": "N/A"
+            "marketDirection": "Stable"
         }
 
-    first_obs = rows[0]
-    latest_obs = rows[-1]
+    rows_sorted = sorted(rows, key=lambda x: x["periodDate"])
+    latest = rows_sorted[-1]
+    first = rows_sorted[0]
 
-    latest_idx = float(latest_obs["priceIndex"])
-    first_idx = float(first_obs["priceIndex"])
+    latest_index = latest["priceIndex"]
+    first_index = first["priceIndex"]
+    cum_change = ((latest_index - first_index) / first_index) * 100.0 if first_index > 0 else 0.0
 
-    cum_change = ((latest_idx - first_idx) / first_idx) * 100 if first_idx > 0 else 0
+    qoq_change = latest.get("periodChangePercent")
+    yoy_change = latest.get("annualChangePercent")
 
-    recent_qoq = float(latest_obs["periodChangePercent"] or 0)
-    market_direction = "Rising" if recent_qoq > 0.3 else ("Falling" if recent_qoq < -0.3 else "Stable")
+    if granularity == "yearly":
+        latest_period_str = f"{latest['year']} ΜΟ" if "Annual" in str(latest.get('quarter', '')) else f"{latest['year']}"
+        first_period_str = f"{first['year']}"
+    else:
+        latest_period_str = f"{latest['year']} Q{latest['quarter']}"
+        first_period_str = f"{first['year']} Q{first['quarter']}"
+
+    if len(rows_sorted) >= 2:
+        prev = rows_sorted[-2]
+        diff = latest_index - prev["priceIndex"]
+        if diff > 0.5:
+            direction = "Rising"
+        elif diff < -0.5:
+            direction = "Falling"
+        else:
+            direction = "Stable"
+    else:
+        direction = "Stable"
 
     return {
-        "latestIndex": round(latest_idx, 2),
-        "latestQuarter": f"{latest_obs['year']} Q{latest_obs['quarter']}",
-        "latestYear": latest_obs["year"],
-        "latestQuarterNum": latest_obs["quarter"],
-        "qoqChange": round(float(latest_obs["periodChangePercent"]), 2) if latest_obs["periodChangePercent"] is not None else None,
-        "yoyChange": round(float(latest_obs["annualChangePercent"]), 2) if latest_obs["annualChangePercent"] is not None else None,
+        "latestIndex": round(latest_index, 2),
+        "latestQuarter": latest_period_str,
+        "latestYear": latest["year"],
+        "firstPeriod": first_period_str,
+        "qoqChange": round(float(qoq_change), 2) if qoq_change is not None else None,
+        "yoyChange": round(float(yoy_change), 2) if yoy_change is not None else None,
         "cumulativeChange": round(cum_change, 2),
-        "marketDirection": market_direction,
-        "isProvisional": bool(latest_obs["isProvisional"]),
-        "lastUpdatedDate": latest_obs["periodDate"],
-        "resourceName": latest_obs.get("resourceName"),
-        "totalObservations": len(rows),
         "firstPeriod": f"{first_obs['year']} Q{first_obs['quarter']}"
     }
 

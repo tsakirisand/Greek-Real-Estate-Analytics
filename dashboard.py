@@ -108,16 +108,37 @@ custom_css = """
         margin-bottom: 28px;
         box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.4);
     }
+    /* Flexbox Column Layout for 100% Equal Height Metric Cards */
+    div[data-testid="column"] {
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    div[data-testid="column"] > div[data-testid="stVerticalBlock"] {
+        height: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    div[data-testid="column"] > div[data-testid="stVerticalBlock"] > div.element-container {
+        height: 100% !important;
+    }
+    div[data-testid="column"] > div[data-testid="stVerticalBlock"] > div.element-container > div[data-testid="stMarkdownContainer"] {
+        height: 100% !important;
+    }
     .metric-card {
         background: rgba(30, 41, 59, 0.7) !important;
         border: 1px solid rgba(51, 65, 85, 0.8) !important;
         backdrop-filter: blur(8px);
         border-radius: 16px;
-        padding: 20px 24px;
+        padding: 18px 20px;
         position: relative;
         overflow: hidden;
         transition: all 0.25s ease;
         box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        height: 100% !important;
+        min-height: 145px;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
     }
     .metric-card::before {
         content: '';
@@ -139,10 +160,11 @@ custom_css = """
         font-size: 30px; font-weight: 800; color: #ffffff !important;
         margin-top: 6px; margin-bottom: 4px; font-family: 'JetBrains Mono', monospace;
     }
-    .metric-subtitle { font-size: 12px; font-weight: 600; }
+    .metric-subtitle { font-size: 12px; font-weight: 600; min-height: 32px; display: flex; align-items: center; }
     .text-emerald { color: #10b981 !important; }
     .text-rose { color: #f43f5e !important; }
     .text-blue { color: #3b82f6 !important; }
+    .text-amber { color: #f59e0b !important; }
     .text-amber { color: #f59e0b !important; }
 
     .insights-card {
@@ -325,7 +347,7 @@ if not df.empty:
         axis=1
     )
 
-summary = queries.get_metrics_summary(db, area_slugs=selected_slugs, start_date=start_date, end_date=end_date)
+summary = queries.get_metrics_summary(db, area_slugs=selected_slugs, start_date=start_date, end_date=end_date, granularity=granularity_param)
 stats = queries.get_market_statistics(db, area_slugs=selected_slugs, start_date=start_date, end_date=end_date)
 
 
@@ -352,6 +374,9 @@ if app_key == "dashboard":
     if summary:
         k1, k2, k3, k4, k5 = st.columns(5)
         
+        card2_title = ("ΡΥΘΜΟΣ ΑΝΑΠΤΥΞΗΣ ΕΤΟΥΣ" if lang == "el" else "YEARLY GROWTH RATE") if granularity_param == "yearly" else t('kpi_qoq_growth')
+        card2_sub = ("έναντι προηγούμενου έτους" if lang == "el" else "vs previous year") if granularity_param == "yearly" else t('vs_prev_quarter')
+        
         with k1:
             st.markdown(f"""
             <div class="metric-card">
@@ -367,9 +392,9 @@ if app_key == "dashboard":
             color_cls = "text-emerald" if qoq and qoq >= 0 else "text-rose"
             st.markdown(f"""
             <div class="metric-card">
-                <div class="metric-title">{t('kpi_qoq_growth')}</div>
+                <div class="metric-title">{card2_title}</div>
                 <div class="metric-value {color_cls}">{qoq_str}</div>
-                <div class="metric-subtitle font-mono text-muted">{t('vs_prev_quarter')}</div>
+                <div class="metric-subtitle font-mono text-muted">{card2_sub}</div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -575,8 +600,8 @@ if app_key == "dashboard":
         display_df.rename(columns=rename_map, inplace=True)
         st.dataframe(display_df, use_container_width=True, height=350)
         
-        csv_data = display_df.to_csv(index=False).encode('utf-8')
-        st.download_button(t('download_csv'), csv_data, "greek_real_estate_filtered.csv", "text/csv")
+        csv_data = ("\ufeff" + display_df.to_csv(index=False)).encode('utf-8')
+        st.download_button(t('download_csv'), csv_data, "greek_real_estate_filtered.csv", "text/csv; charset=utf-8")
 
 
 # --- 2. DATA ANALYST DIAGNOSIS VIEW ---
