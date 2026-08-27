@@ -16,12 +16,16 @@ An end-to-end, production-grade financial analytics platform and REST API for vi
 ## 🌟 Key Features
 
 * **📊 Interactive Financial Dashboard**: Streamlit dashboard powered by Plotly charts, customizable color palettes, and responsive glassmorphism UI.
+* **🔮 ML Price Index Forecasting**: Time-series forecasting module (`forecasting.py`) utilizing Holt's Linear Exponential Smoothing to project apartment price indices 1–3 years into the future with 95% confidence intervals.
+* **🗺️ Interactive GeoJSON Regional Map**: Plotly Choropleth map visualizing price index valuations and YoY growth rates across Greek administrative regions.
+* **🧮 Investor ROI & Mortgage Calculator**: Dedicated financial calculator module (`calculator.py`) for computing Net Cap Rate, Gross Yield, ENFIA property taxes, monthly mortgage payments, and annual amortization schedules.
+* **📄 Executive PDF Report Generator**: Automated ReportLab PDF generator (`report_generator.py`) for exporting formatted executive summaries with one-click dashboard download & `/api/export/pdf` REST endpoint.
 * **🌐 Bilingual Interface**: Native support for **English 🇬🇧** and **Greek 🇬🇷** localization.
-* **🚀 Production REST API**: High-performance FastAPI endpoints for geographic areas, price indices, metric summaries, and revision logs with automatic OpenAPI (`/docs`) generation.
-* **⚡ Automated ETL Engine**: Robust loader (`loader.py`) parsing official Bank of Greece XLS resources (covering regional indices, age groups, quarterly YoY/QoQ growth, and revision tracking).
-* **🗄️ Normalized Relational Database**: PostgreSQL architecture designed with 5 normalized tables (`geographical_area`, `price_index`, `dataset_resource`, `data_revision`, `revision_view`) and Alembic migrations.
-* **🐳 Docker Orchestration**: Complete containerized environment using Docker Compose for PostgreSQL, FastAPI, and Streamlit.
-* **🧪 Comprehensive Testing & Profiling**: Pytest coverage for ETL routines, API endpoints, and database models, plus an execution profiler script (`profiler.py`).
+* **🚀 Production REST API**: High-performance FastAPI endpoints for geographic areas, price indices, ML forecasts (`/api/forecast`), PDF exports (`/api/export/pdf`), and revision logs.
+* **⚡ Automated ETL Engine**: Robust loader (`loader.py`) parsing official Bank of Greece XLS resources.
+* **🗄️ Normalized Relational Database**: PostgreSQL architecture designed with 5 normalized tables and Alembic migrations.
+* **🐳 Docker Orchestration**: Complete containerized environment using Docker Compose.
+* **🧪 Comprehensive Testing & Profiling**: Pytest coverage for ETL routines, API endpoints, forecasting, calculator, and PDF generation.
 
 ---
 
