@@ -185,7 +185,8 @@ def get_metrics_summary(
         "qoqChange": round(float(qoq_change), 2) if qoq_change is not None else None,
         "yoyChange": round(float(yoy_change), 2) if yoy_change is not None else None,
         "cumulativeChange": round(cum_change, 2),
-        "firstPeriod": f"{first_obs['year']} Q{first_obs['quarter']}"
+        "isProvisional": bool(latest.get("isProvisional", False)),
+        "marketDirection": direction
     }
 
 def get_market_statistics(
