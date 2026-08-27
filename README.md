@@ -27,30 +27,59 @@ An end-to-end, production-grade financial analytics platform and REST API for vi
 
 ## 🏗️ System Architecture
 
-```
-                                  ┌─────────────────────────────┐
-                                  │   Bank of Greece Datasets   │
-                                  │  (62 Official XLS Resources) │
-                                  └──────────────┬──────────────┘
-                                                 │
-                                                 ▼
-                                  ┌─────────────────────────────┐
-                                  │       ETL Engine Loader     │
-                                  │         (loader.py)         │
-                                  └──────────────┬──────────────┘
-                                                 │
-                                                 ▼
-                                  ┌─────────────────────────────┐
-                                  │    PostgreSQL Database      │
-                                  │ (ORM + SQL Optimized Views) │
-                                  └──────┬───────────────┬──────┘
-                                         │               │
-                    ┌────────────────────┘               └────────────────────┐
-                    ▼                                                         ▼
-    ┌──────────────────────────────┐                           ┌──────────────────────────────┐
-    │    FastAPI REST Backend      │                           │ Streamlit Financial Dashboard│
-    │  (http://localhost:8000)     │                           │   (http://localhost:8501)    │
-    └──────────────────────────────┘                           └──────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph ExternalSources["External Data Sources"]
+        BoG["Bank of Greece Official XLS Resources<br/>(62 Dataset Resources)"]
+        Meta["datapackage.json<br/>(Source Metadata Specifications)"]
+    end
+
+    subgraph ETLPipeline["Data Pipeline & ETL"]
+        APIClient["api_client.py<br/>(API Fetcher & Retry Engine)"]
+        Schemas["schemas.py<br/>(Pydantic Schema Validation)"]
+        Loader["loader.py<br/>(Transform & Ingestion)"]
+        Fallback["data/downloads<br/>(Local File Cache / Fallback)"]
+    end
+
+    subgraph DBLayer["Database Layer"]
+        Postgres[("PostgreSQL Database<br/>(Indexes: year, date_key, area_id)")]
+        Queries["queries.py<br/>(Window Functions: YoY/QoQ LAG, Revision Views)"]
+    end
+
+    subgraph BackendAPI["Backend API Layer"]
+        FastAPI["main.py<br/>(FastAPI REST Server & OpenAPI Docs)"]
+    end
+
+    subgraph UILayer["Presentation & UI Layer"]
+        Cache["@st.cache_data (TTL=3600s)<br/>@st.cache_resource"]
+        i18n["i18n.py<br/>(Bilingual EN / EL Support)"]
+        Dashboard["dashboard.py<br/>(Streamlit Financial Dashboard)"]
+        
+        Trends["Price Index Trends 📈"]
+        Regional["Regional Analytics 🗺️"]
+        Growth["YoY / QoQ Growth Rates 📊"]
+        Revisions["Revision History & Insights 📑"]
+    end
+
+    BoG --> APIClient
+    Meta --> Schemas
+    APIClient --> Loader
+    Schemas --> Loader
+    Loader -.->|"Failure Fallback"| Fallback
+    Fallback -.-> Loader
+    Loader --> Postgres
+
+    Postgres --> Queries
+    Queries --> FastAPI
+    Queries --> Cache
+
+    Cache --> Dashboard
+    i18n --> Dashboard
+
+    Dashboard --> Trends
+    Dashboard --> Regional
+    Dashboard --> Growth
+    Dashboard --> Revisions
 ```
 
 ---
