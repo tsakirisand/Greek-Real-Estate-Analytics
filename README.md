@@ -13,6 +13,11 @@ An end-to-end, production-grade financial analytics platform and REST API for vi
 
 ---
 
+## 🌐 Live Demo & Deployment
+🔗 **Public Application URL:** [https://greek-real-estate-analytics.onrender.com](https://greek-real-estate-analytics.onrender.com)
+
+---
+
 ## 🌟 Key Features
 
 * **📊 Interactive Financial Dashboard**: Streamlit dashboard powered by Plotly charts, customizable color palettes, and responsive glassmorphism UI.
