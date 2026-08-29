@@ -134,6 +134,36 @@ GreekRealEstateAnalytics/
 
 ---
 
+## 🔗 REST API Endpoint Reference
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/` | Root endpoint displaying service health and dataset info |
+| `GET` | `/health` | Application health check status |
+| `GET` | `/api/areas` | Retrieve list of all available geographical regions |
+| `GET` | `/api/price-indices` | Fetch filtered price index timeseries (quarterly/annual) |
+| `GET` | `/api/metrics/summary` | Summary statistics (min, max, average, latest index) |
+| `GET` | `/api/market-statistics` | Comprehensive YoY/QoQ growth rates across areas |
+| `GET` | `/api/revisions` | Revision audit log for price index updates |
+| `GET` | `/api/export/csv` | Download filtered datasets in CSV format |
+| `GET` | `/api/forecast` | ML Holt's exponential smoothing forecast by area |
+| `GET` | `/api/export/pdf` | Download formatted executive PDF report |
+
+---
+
+## 📜 Data Attribution & References
+
+Data source provided by the **Bank of Greece** (*Τράπεζα της Ελλάδος*) — Real Estate Market Analysis Section.
+Dataset definitions and metadata adhere to `datapackage.json` standards.
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+---
+
 ## 🚀 Setup & Installation
 
 ### 1. Local Run
@@ -205,23 +235,6 @@ docker-compose up --build
 
 ---
 
-## 🔗 REST API Endpoint Reference
-
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/` | Root endpoint displaying service health and dataset info |
-| `GET` | `/health` | Application health check status |
-| `GET` | `/api/areas` | Retrieve list of all available geographical regions |
-| `GET` | `/api/price-indices` | Fetch filtered price index timeseries (quarterly/annual) |
-| `GET` | `/api/metrics/summary` | Summary statistics (min, max, average, latest index) |
-| `GET` | `/api/market-statistics` | Comprehensive YoY/QoQ growth rates across areas |
-| `GET` | `/api/revisions` | Revision audit log for price index updates |
-| `GET` | `/api/export/csv` | Download filtered datasets in CSV format |
-| `GET` | `/api/forecast` | ML Holt's exponential smoothing forecast by area |
-| `GET` | `/api/export/pdf` | Download formatted executive PDF report |
-
----
-
 ## 🧪 Running Unit Tests Locally
 
 Run the complete pytest suite with test coverage reporting:
@@ -249,16 +262,3 @@ bandit -r . -x ./tests,./venv
 # Run database query performance benchmarks
 python3 profiler.py
 ```
-
----
-
-## 📜 Data Attribution & References
-
-Data source provided by the **Bank of Greece** (*Τράπεζα της Ελλάδος*) — Real Estate Market Analysis Section.
-Dataset definitions and metadata adhere to `datapackage.json` standards.
-
----
-
-## 📄 License
-
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
