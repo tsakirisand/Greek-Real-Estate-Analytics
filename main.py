@@ -186,36 +186,33 @@ def api_export_csv(
     )
 
     output = io.StringIO()
-    output.write('\ufeff')
     writer = csv.writer(output)
     writer.writerow([
-        "Geographical Area", "Area Code", "Year", "Quarter", "Period Label",
-        "Price Index (Base 2021=100)", "QoQ Change %", "YoY Change %", "Provisional Status", "Data Source Resource"
+        "Geographical Area", "Year", "Quarter", "Period",
+        "Price Index", "QoQ Change %", "YoY Change %", "Provisional", "Source Resource"
     ])
 
     for r in rows:
         writer.writerow([
             r["areaName"],
-            r["areaSlug"],
             r["year"],
             r["quarter"],
             f"{r['year']} Q{r['quarter']}",
-            f"{r['priceIndex']:.2f}",
-            f"{r['periodChangePercent']:+.2f}" if r["periodChangePercent"] is not None else "",
-            f"{r['annualChangePercent']:+.2f}" if r["annualChangePercent"] is not None else "",
+            r["priceIndex"],
+            r["periodChangePercent"] if r["periodChangePercent"] is not None else "",
+            r["annualChangePercent"] if r["annualChangePercent"] is not None else "",
             "Yes" if r["isProvisional"] else "No",
-            r.get("resourceName", "Bank of Greece XLS")
+            r.get("resourceName", "")
         ])
 
-    csv_data = output.getvalue().encode('utf-8')
+    csv_data = output.getvalue()
     return Response(
         content=csv_data,
-        media_type="text/csv; charset=utf-8",
+        media_type="text/csv",
         headers={
             "Content-Disposition": f"attachment; filename=greek_real_estate_{datetime.now().strftime('%Y%m%d')}.csv"
         }
     )
-
 
 @app.get("/api/forecast")
 def api_get_forecast(
