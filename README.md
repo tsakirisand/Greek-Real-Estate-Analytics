@@ -134,78 +134,70 @@ GreekRealEstateAnalytics/
 
 ---
 
-## ⚡ Quick Start (Local Setup)
+## 🚀 Setup & Installation
 
-### 1. Environment Setup
+### 1. Local Run
 
-Clone the repository and prepare the Python environment:
+**Prerequisites:**
+* Python 3.10+
+* Running PostgreSQL instance (or Docker Postgres fallback)
+
+**Steps:**
+
+1. **Clone the Repository:**
+   ```bash
+   git clone https://github.com/tsakirisand/Greek-Real-Estate-Analytics-.git
+   cd Greek-Real-Estate-Analytics-
+   ```
+
+2. **Create & Activate Virtual Environment:**
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. **Install Dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Environment Variables (`.env`):**
+   Create a `.env` file in the project root directory (or copy from `.env.example`):
+   ```bash
+   cp .env.example .env
+   ```
+   Example configuration:
+   ```env
+   DATABASE_URL="postgresql://postgres:postgrespassword@localhost:5433/greek_real_estate?schema=public"
+   ```
+
+5. **Initialize Database & Load Data:**
+   ```bash
+   # Create database tables and latest_price_indices SQL views
+   python3 create_tables.py
+
+   # Extract Bank of Greece dataset resources and load into PostgreSQL
+   python3 loader.py
+   ```
+
+6. **Launch Applications:**
+   ```bash
+   # Launch Streamlit Analytics Dashboard
+   streamlit run dashboard.py --server.port 8501
+
+   # Launch FastAPI REST Service
+   uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+   ```
+   * Access the dashboard at **[http://localhost:8501](http://localhost:8501)**.
+   * Access interactive API docs at **[http://localhost:8000/docs](http://localhost:8000/docs)**.
+
+### 2. Run with Docker Compose
 
 ```bash
-# Clone repository
-git clone https://github.com/tsakirisand/Greek-Real-Estate-Analytics-.git
-cd Greek-Real-Estate-Analytics-
-
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
+docker-compose up --build
 ```
-
-### 2. Configuration
-
-Copy the example environment file and update your PostgreSQL connection parameters if needed:
-
-```bash
-cp .env.example .env
-```
-
-### 3. Database Initialization & Data Ingestion
-
-```bash
-# Create database tables and latest_price_indices SQL views
-python3 create_tables.py
-
-# Run ETL pipeline to ingest Bank of Greece data resources
-python3 loader.py
-```
-
-### 4. Launch Applications
-
-#### 📊 Streamlit Analytics Dashboard
-```bash
-streamlit run dashboard.py --server.port 8501
-```
-Access the interactive web app at **[http://localhost:8501](http://localhost:8501)**.
-
-#### 🚀 FastAPI REST Service
-```bash
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-```
-Explore the interactive API docs at:
-- **Swagger UI**: [http://localhost:8000/docs](http://localhost:8000/docs)
-- **ReDoc**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
-
----
-
-## 🐳 Docker Deployment
-
-Deploy the full stack (PostgreSQL, FastAPI backend, and Streamlit frontend) with a single command:
-
-```bash
-docker-compose up --build -d
-```
-
-- **Dashboard**: [http://localhost:8501](http://localhost:8501)
-- **REST API**: [http://localhost:8000](http://localhost:8000)
-- **API Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
-
-To view container logs or stop services:
-```bash
-docker-compose logs -f
-docker-compose down
-```
+* Access the dashboard at **[http://localhost:8501](http://localhost:8501)**.
+* Access the REST API at **[http://localhost:8000](http://localhost:8000)** (Docs: **[http://localhost:8000/docs](http://localhost:8000/docs)**).
 
 ---
 
@@ -221,20 +213,36 @@ docker-compose down
 | `GET` | `/api/market-statistics` | Comprehensive YoY/QoQ growth rates across areas |
 | `GET` | `/api/revisions` | Revision audit log for price index updates |
 | `GET` | `/api/export/csv` | Download filtered datasets in CSV format |
+| `GET` | `/api/forecast` | ML Holt's exponential smoothing forecast by area |
+| `GET` | `/api/export/pdf` | Download formatted executive PDF report |
 
 ---
 
-## 🧪 Testing & Quality Assurance
+## 🧪 Running Unit Tests Locally
 
-Run the automated test suite using `pytest`:
+Run the complete pytest suite with test coverage reporting:
 
 ```bash
+# Run pytest with summary
 pytest
+
+# Run pytest with code coverage breakdown
+pytest --cov=. --cov-report=term-missing
 ```
 
-To run performance benchmarks on database queries:
+Run code formatting and security audit checks:
 
 ```bash
+# Check code formatting (Black)
+black --check .
+
+# Run linting (Flake8)
+flake8 .
+
+# Run security static analysis (Bandit)
+bandit -r . -x ./tests,./venv
+
+# Run database query performance benchmarks
 python3 profiler.py
 ```
 
