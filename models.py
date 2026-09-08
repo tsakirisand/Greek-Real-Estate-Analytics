@@ -80,7 +80,7 @@ class PriceIndex(Base):
     dataset_resource = relationship("DatasetResource", back_populates="price_indices")
 
     __table_args__ = (
-        UniqueConstraint("geographical_area_id", "period_date", "dataset_resource_id", name="uq_area_date_resource"),
+        UniqueConstraint("geographical_area_id", "period_date", name="uq_area_date"),
         Index("idx_price_indices_area", "geographical_area_id"),
         Index("idx_price_indices_period_date", "period_date"),
         Index("idx_price_indices_year", "year"),

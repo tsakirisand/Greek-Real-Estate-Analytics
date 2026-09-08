@@ -122,25 +122,54 @@ def generate_pdf_report(db: Session, lang: str = "en") -> bytes:
     elements.append(t_summary)
     elements.append(Spacer(1, 14))
 
-    # Section 2: Macroeconomic Market Insights
+    # Section 2: Macroeconomic Market Findings (Dynamically Calculated from Database)
     sec2_title = "2. Key Macroeconomic Market Findings" if lang == "en" else "2. Βασικά Μακροοικονομικά Συμπεράσματα"
     elements.append(Paragraph(sec2_title, heading_style))
 
-    if lang == "en":
-        p1 = "<b>Recession Cycle (2008–2017):</b> The apartment price index experienced a severe 42.2% drop from 101.5 to 59.0 due to a 25% GDP loss, >95% contraction in mortgage credit, and new property taxation (ENFIA)."
-        p2 = "<b>Recovery Catalyst (2018–2025):</b> The index rebounded by +128.4% to 134.8+, propelled by Foreign Direct Investment (Golden Visa), short-term rental conversions (Airbnb), and a decade-long housing supply deficit."
-        p3 = "<b>Metropolitan Decoupling:</b> Athens (+136.2% from bottom) and Thessaloniki (+131.0%) significantly outperformed regional areas (+72.1%) due to institutional investment concentration."
-    else:
-        p1 = "<b>Κύκλος Ύφεσης (2008–2017):</b> Ο δείκτης τιμών κατέγραψε πτώση -42.2% (από 101.5 σε 59.0) λόγω απώλειας 25% ΑΕΠ, μείωσης στεγαστικής πίστης κατά >95% και επιβολής ΕΝΦΙΑ."
-        p2 = "<b>Καταλύτες Ανάκαμψης (2018–2025):</b> Ραγδαία άνοδος +128.4% λόγω ξένων επενδύσεων (Golden Visa), επέκτασης βραχυχρόνιων μισθώσεων (Airbnb) και δομικού ελλείμματος νεόδμητων κατοικιών."
-        p3 = "<b>Γεωγραφική Αποσύνδεση:</b> Η Αθήνα (+136.2% από το ναδίρ) και η Θεσσαλονίκη (+131.0%) κινούνται ταχύτερα από την περιφέρεια (+72.1%)."
+    dyn_insights = queries.get_dynamic_market_insights(db, area_slug="athens")
+    if dyn_insights:
+        if lang == "en":
+            p1 = (
+                f"<b>Historical Recession Cycle ({dyn_insights['peakPeriod']} → {dyn_insights['troughPeriod']}):</b> "
+                f"The apartment price index declined by <b>{dyn_insights['recessionDeclinePct']:.1f}%</b> "
+                f"from its peak of {dyn_insights['peakIndex']:.1f} ({dyn_insights['peakPeriod']}) to its trough of {dyn_insights['troughIndex']:.1f} ({dyn_insights['troughPeriod']})."
+            )
+            p2 = (
+                f"<b>Recovery Trajectory ({dyn_insights['troughPeriod']} → {dyn_insights['latestPeriod']}):</b> "
+                f"The index rebounded by <b>+{dyn_insights['recoveryReboundPct']:.1f}%</b> "
+                f"from {dyn_insights['troughIndex']:.1f} to {dyn_insights['latestIndex']:.1f} ({dyn_insights['latestPeriod']}), "
+                f"standing +{dyn_insights['base2021GrowthPct']:.1f}% above the 2021 base level."
+            )
+            p3 = (
+                f"<b>Cumulative Horizon Growth ({dyn_insights['firstPeriod']} → {dyn_insights['latestPeriod']}):</b> "
+                f"Across the full dataset horizon ({dyn_insights['firstPeriod']} to {dyn_insights['latestPeriod']}), "
+                f"the price index recorded a total cumulative change of <b>+{dyn_insights['cumulativeGrowthPct']:.1f}%</b>."
+            )
+        else:
+            p1 = (
+                f"<b>Ιστορικός Κύκλος Ύφεσης ({dyn_insights['peakPeriod']} → {dyn_insights['troughPeriod']}):</b> "
+                f"Ο δείκτης τιμών κατέγραψε πτώση <b>{dyn_insights['recessionDeclinePct']:.1f}%</b> "
+                f"από το ανώτατο σημείο των {dyn_insights['peakIndex']:.1f} μονάδων ({dyn_insights['peakPeriod']}) "
+                f"στο ναδίρ των {dyn_insights['troughIndex']:.1f} μονάδων ({dyn_insights['troughPeriod']})."
+            )
+            p2 = (
+                f"<b>Πορεία Ανάκαμψης ({dyn_insights['troughPeriod']} → {dyn_insights['latestPeriod']}):</b> "
+                f"Ο δείκτης σημείωσε ανάκαμψη <b>+{dyn_insights['recoveryReboundPct']:.1f}%</b> "
+                f"από τις {dyn_insights['troughIndex']:.1f} στις {dyn_insights['latestIndex']:.1f} μονάδες ({dyn_insights['latestPeriod']}), "
+                f"βρισκόμενος +{dyn_insights['base2021GrowthPct']:.1f}% πάνω από το έτος βάσης 2021."
+            )
+            p3 = (
+                f"<b>Αθροιστική Μεταβολή ({dyn_insights['firstPeriod']} → {dyn_insights['latestPeriod']}):</b> "
+                f"Στη συνολική περίοδο κάλυψης ({dyn_insights['firstPeriod']} έως {dyn_insights['latestPeriod']}), "
+                f"ο δείκτης κατέγραψε αθροιστική μεταβολή <b>+{dyn_insights['cumulativeGrowthPct']:.1f}%</b>."
+            )
 
-    elements.append(Paragraph(p1, body_style))
-    elements.append(Spacer(1, 4))
-    elements.append(Paragraph(p2, body_style))
-    elements.append(Spacer(1, 4))
-    elements.append(Paragraph(p3, body_style))
-    elements.append(Spacer(1, 14))
+        elements.append(Paragraph(p1, body_style))
+        elements.append(Spacer(1, 4))
+        elements.append(Paragraph(p2, body_style))
+        elements.append(Spacer(1, 4))
+        elements.append(Paragraph(p3, body_style))
+        elements.append(Spacer(1, 14))
 
     # Section 3: Data Provenance
     sec3_title = "3. Primary Dataset Source & Attribution" if lang == "en" else "3. Πηγή Δεδομένων & Πιστοποίηση"

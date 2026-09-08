@@ -444,43 +444,44 @@ if app_key == "dashboard":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Integrated Executive Market Insights Block (Concatenated HTML string with ZERO leading whitespace)
-    if summary and not df.empty:
+    # Integrated Executive Market Insights Block (Dynamically Calculated from Database)
+    dyn_insights = queries.get_dynamic_market_insights(db, area_slug="athens")
+    if summary and not df.empty and dyn_insights:
         latest_val = summary['latestIndex']
         latest_period = summary['latestQuarter']
         yoy_val = summary.get('yoyChange', 0)
-        base_growth = latest_val - 100.0
+        base_growth = dyn_insights['base2021GrowthPct']
 
         if lang == "el":
             insights_title = "💡 Αναλυτική Ερμηνεία & Αίτια Μεταβολών Αγοράς"
-            insights_caption = "Πλήρης διαγνωστική εξήγηση των κυκλικών διακυμάνσεων, των αιτίων της ύφεσης και της πρόσφατης ανάκαμψης."
+            insights_caption = "Δυναμική διαγνωστική εξήγηση των κυκλικών διακυμάνσεων, των αιτίων της ύφεσης και της πρόσφατης ανάκαμψης βάσει των δεδομένων."
             
             t1_title = "📊 1. Τρέχουσα Φάση Αγοράς & Δείκτης"
-            t1_text = f"Ο δείκτης τιμών διαμορφώνεται στο <b>{latest_val:.1f}</b> ({latest_period}), καταγράφοντας άνοδο <b>{base_growth:+.1f}%</b> σε σχέση με το έτος βάσης 2021 (=100). Η αγορά κινείται με ετήσιο ρυθμό <b>{yoy_val:+.1f}%</b>, υπερβαίνοντας τον αθροιστικό πληθωρισμό της τελευταίας 4ετίας."
+            t1_text = f"Ο δείκτης τιμών διαμορφώνεται στο <b>{latest_val:.1f}</b> ({latest_period}), καταγράφοντας μεταβολή <b>{base_growth:+.1f}%</b> σε σχέση με το έτος βάσης 2021 (=100). Η ετήσια μεταβολή διαμορφώνεται στο <b>{yoy_val:+.1f}%</b>."
             
-            t2_title = "🏛️ 2. Αίτια της Μεγάλης Ύφεσης (2008–2017: -42.2%)"
-            t2_text = "Η βαθιά κατάρρευση των τιμών από το 101.5 στο ναδίρ του 59.0 οφείλεται στην <b>απώλεια του 25% του ΑΕΠ</b>, τη <b>μείωση της στεγαστικής πίστης κατά &gt;95%</b> λόγω συσσώρευσης κόκκινων δανείων στις τράπεζες, τη <b>φορολογική επιβάρυνση (ΕΝΦΙΑ)</b> και την 10ετή στάση των οικοδομικών εργασιών."
+            t2_title = f"🏛️ 2. Ιστορικός Κύκλος Ύφεσης ({dyn_insights['peakPeriod']} – {dyn_insights['troughPeriod']}: {dyn_insights['recessionDeclinePct']:.1f}%)"
+            t2_text = f"Ο δείκτης τιμών υποχώρησε από τις <b>{dyn_insights['peakIndex']:.1f}</b> μονάδες ({dyn_insights['peakPeriod']}) στο χαμηλότερο σημείο των <b>{dyn_insights['troughIndex']:.1f}</b> μονάδων ({dyn_insights['troughPeriod']}), σημειώνοντας συνολική πτώση <b>{dyn_insights['recessionDeclinePct']:.1f}%</b>."
             
-            t3_title = "🚀 3. Αίτια της Ραγδαίας Ανάκαμψης (2018–2025: +128.4%)"
-            t3_text = "Η εκρηκτική άνοδος οφείλεται στη μαζική <b>εισροή ξένων κεφαλαίων (Golden Visa)</b>, την <b>επέκταση των βραχυχρόνιων μισθώσεων (Airbnb)</b> που απορρόφησαν το οικιστικό απόθεμα στα αστικά κέντρα, και το <b>δομικό έλλειμμα νεόδμητων διαμερισμάτων</b> λόγω της 10ετούς κατασκευαστικής απραξίας."
+            t3_title = f"🚀 3. Πορεία Ανάκαμψης ({dyn_insights['troughPeriod']} – {dyn_insights['latestPeriod']}: +{dyn_insights['recoveryReboundPct']:.1f}%)"
+            t3_text = f"Από το χαμηλότερο σημείο των <b>{dyn_insights['troughIndex']:.1f}</b> μονάδων ({dyn_insights['troughPeriod']}), ο δείκτης ανέκαμψε κατά <b>+{dyn_insights['recoveryReboundPct']:.1f}%</b>, φτάνοντας στις <b>{dyn_insights['latestIndex']:.1f}</b> μονάδες ({dyn_insights['latestPeriod']})."
             
-            t4_title = "🗺️ 4. Γεωγραφική Αποσύνδεση (Αθήνα vs Περιφέρεια)"
-            t4_text = "Η <b>Αθήνα (+136.2% από το ναδίρ)</b> και η <b>Θεσσαλονίκη (+131.0%)</b> κινούνται ταχύτερα από τις <b>Λοιπές Περιοχές (+72.1%)</b>, καθώς συγκεντρώνουν τη μερίδα του λέοντος της θεσμικής επενδυτικής δραστηριότητας, των τουριστικών ροών και των έργων υποδομής."
+            t4_title = f"🗺️ 4. Αθροιστική Εξέλιξη ({dyn_insights['firstPeriod']} – {dyn_insights['latestPeriod']})"
+            t4_text = f"Σε ολόκληρο το χρονικό εύρος του δείκτη ({dyn_insights['firstPeriod']} έως {dyn_insights['latestPeriod']}), η συνολική αθροιστική μεταβολή διαμορφώνεται σε <b>+{dyn_insights['cumulativeGrowthPct']:.1f}%</b>."
         else:
             insights_title = "💡 Market Insights & Macroeconomic Drivers"
-            insights_caption = "Comprehensive explanation of cyclical market trends, recession shock causes, and recovery drivers."
+            insights_caption = "Dynamic diagnostic breakdown of historical market cycles based strictly on database observations."
             
-            t1_title = "📊 1. Current Market Phase & Valuation"
-            t1_text = f"The apartment index stands at <b>{latest_val:.1f}</b> ({latest_period}), up <b>{base_growth:+.1f}%</b> relative to the 2021 base year (=100). Annual pace is running at <b>{yoy_val:+.1f}%</b> YoY, consistently outpacing cumulative inflation."
+            t1_title = "📊 1. Current Valuation Phase"
+            t1_text = f"The apartment price index stands at <b>{latest_val:.1f}</b> ({latest_period}), up <b>{base_growth:+.1f}%</b> relative to the 2021 base year (=100). The current YoY change is <b>{yoy_val:+.1f}%</b>."
             
-            t2_title = "🏛️ 2. Causes of the Great Recession (2008–2017: -42.2%)"
-            t2_text = "The severe collapse from 101.5 to the trough of 59.0 was triggered by a <b>25% GDP contraction</b>, a <b>&gt;95% drop in mortgage credit</b> due to bank NPL accumulation, <b>new property taxation (ENFIA)</b>, and a decade-long construction hiatus."
+            t2_title = f"🏛️ 2. Historical Recession Cycle ({dyn_insights['peakPeriod']} – {dyn_insights['troughPeriod']}: {dyn_insights['recessionDeclinePct']:.1f}%)"
+            t2_text = f"The price index contracted from its peak of <b>{dyn_insights['peakIndex']:.1f}</b> ({dyn_insights['peakPeriod']}) to its trough of <b>{dyn_insights['troughIndex']:.1f}</b> ({dyn_insights['troughPeriod']}), recording a cumulative decline of <b>{dyn_insights['recessionDeclinePct']:.1f}%</b>."
             
-            t3_title = "🚀 3. Causes of the Rapid Recovery (2018–2025: +128.4%)"
-            t3_text = "The powerful rebound was fueled by <b>foreign capital inflows (Golden Visa)</b>, <b>short-term rental expansion (Airbnb)</b> absorbing housing stock in urban centers, and a <b>structural shortage of modern apartments</b> after a decade of zero construction."
+            t3_title = f"🚀 3. Recovery Trajectory ({dyn_insights['troughPeriod']} – {dyn_insights['latestPeriod']}: +{dyn_insights['recoveryReboundPct']:.1f}%)"
+            t3_text = f"From the trough of <b>{dyn_insights['troughIndex']:.1f}</b> ({dyn_insights['troughPeriod']}), the index rebounded by <b>+{dyn_insights['recoveryReboundPct']:.1f}%</b> to reach <b>{dyn_insights['latestIndex']:.1f}</b> ({dyn_insights['latestPeriod']})."
             
-            t4_title = "🗺️ 4. Regional Decoupling (Athens vs Regional Greece)"
-            t4_text = "<b>Athens (+136.2% from bottom)</b> and <b>Thessaloniki (+131.0%)</b> outperformed <b>Other Areas (+72.1%)</b>, absorbing the majority of institutional investment liquidity, tourism revenues, and infrastructure investments."
+            t4_title = f"🗺️ 4. Cumulative Dataset Growth ({dyn_insights['firstPeriod']} – {dyn_insights['latestPeriod']})"
+            t4_text = f"Across the entire dataset timeframe ({dyn_insights['firstPeriod']} to {dyn_insights['latestPeriod']}), the index recorded a total cumulative change of <b>+{dyn_insights['cumulativeGrowthPct']:.1f}%</b>."
 
         card_html = (
             f'<div class="insights-card">'
@@ -613,98 +614,52 @@ if app_key == "dashboard":
 
 # --- 2. DATA ANALYST DIAGNOSIS VIEW ---
 elif app_key == "insights":
+    dyn_insights = queries.get_dynamic_market_insights(db, area_slug="athens")
+    total_obs = len(rows) if rows else 0
     if lang == "el":
         st.title("💡 Αναλύσεις & Συμπεράσματα Αγοράς")
-        st.caption("Πλήρης τεχνική, οικονομική και πιστωτική ερμηνεία των 19.840 εγγραφών της Τράπεζας της Ελλάδος (2006–2025).")
+        st.caption(f"Πλήρης τεχνική ερμηνεία των {total_obs} παρατηρήσεων της Τράπεζας της Ελλάδος ({dyn_insights['firstPeriod']}–{dyn_insights['latestPeriod']}).")
         
-        report_html = (
-            f'<div class="analyst-card">'
-            f'<div class="analyst-card-title">📉 1. Γιατί προκλήθηκε η Μεγάλη Ύφεση (2008–2017); (-42.2%)</div>'
-            f'<div class="analyst-card-text">Η πτώση του δείκτη τιμών διαμερισμάτων από το 101.5 (2008) στο χαμηλό 59.0 (2017) οφείλεται σε 4 καθοριστικούς παράγοντες:'
-            f'<ul style="margin-top:8px; margin-left:20px;">'
-            f'<li><b>Κατάρρευση Διαθέσιμου Εισοδήματος:</b> Η ελληνική οικονομία έχασε πάνω από το 25% του ΑΕΠ της, μειώνοντας δραματικά την αγοραστική δύναμη των νοικοκυριών.</li>'
-            f'<li><b>Πιστωτική Ασφυξία (Credit Crunch):</b> Η έκδοση νέων στεγαστικών δανείων μειώθηκε κατά <b>&gt;95%</b> καθώς οι τράπεζες συσσώρευσαν Μη Εξυπηρετούμενα Δάνεια (κόκκινα δάνεια).</li>'
-            f'<li><b>Επιβολή Φόρων Ακίνητης Περιουσίας (ΕΝΦΙΑ):</b> Η επιβολή νέων φορολογικών βαρών κατέστησε την κατοχή ακινήτων δαπανηρή, οδηγώντας σε κύμα αναγκαστικών πωλήσεων.</li>'
-            f'<li><b>Πλήρης Πάγωμα Οικοδομικής Δραστηριότητας:</b> Η κατασκευή νέων οικοδομών σχεδόν μηδενίστηκε για μια 10ετία.</li>'
-            f'</ul></div></div>'
-            
-            f'<div class="analyst-card">'
-            f'<div class="analyst-card-title">🚀 2. Γιατί πυροδοτήθηκε η Ραγδαία Ανάκαμψη (2018–2025); (+128.4%)</div>'
-            f'<div class="analyst-card-text">Η εκρηκτική άνοδος του δείκτη από το 59.0 στο 134.8+ οφείλεται στους εξής καταλύτες:'
-            f'<ul style="margin-top:8px; margin-left:20px;">'
-            f'<li><b>Εισροή Διεθνών Κεφαλαίων & Golden Visa:</b> Προσέλκυση χιλιάδων ξένων επενδυτών εκτός ΕΕ μέσω των ορίων 250.000€ / 500.000€.</li>'
-            f'<li><b>Επέκταση Βραχυχρόνιων Μισθώσεων (Airbnb):</b> Μετατροπές κατοικιών σε τουριστικά καταλύματα στα κέντρα των πόλεων (Αθήνα, Θεσσαλονίκη), μειώνοντας δραστικά το διαθέσιμο απόθεμα για ντόπιους.</li>'
-            f'<li><b>Έλλειψη Νεόδμητων Ακινήτων (Supply Shortage):</b> Η 10ετής αποχή από την οικοδομή δημιούργησε δομικό έλλειμμα σύγχρονων διαμερισμάτων.</li>'
-            f'<li><b>Εξυγίανση Τραπεζικών Ισολογισμών («Ηρακλής»):</b> Απελευθέρωση ρευστότητας και σταδιακή επανεκκίνηση της στεγαστικής πίστης.</li>'
-            f'</ul></div></div>'
-            
-            f'<div class="analyst-card">'
-            f'<div class="analyst-card-title">🗺️ 3. Γιατί η Αθήνα αποσυνδέθηκε από την υπόλοιπη Ελλάδα;</div>'
-            f'<div class="analyst-card-text">Τα δεδομένα δείχνουν ότι η <b>Αθήνα (+136.2% από το ναδίρ)</b> και η <b>Θεσσαλονίκη (+131.0%)</b> κινούνται πολύ ταχύτερα από τις <b>Λοιπές Περιοχές (+72.1%)</b>.<br><br>'
-            f'<b>Αιτία:</b> Η πρωτεύουσα και η συμβασιλεύουσα συγκεντρώνουν τη μερίδα του λέοντος της θεσμικής επενδυτικής δραστηριότητας, των τουριστικών ροών και των υποδομών (μετρό, έργο Ελληνικού), ενώ η επαρχιακή αγορά εξαρτάται κυρίως από την τοπική εγχώρια ζήτηση.</div></div>'
-
-            f'<div class="analyst-card">'
-            f'<div class="analyst-card-title">🏦 4. Πιστωτική Αγορά & Επιτόκια ΕΚΤ (2022–2025)</div>'
-            f'<div class="analyst-card-text">Η επιθετική αύξηση των επιτοκίων από την Ευρωπαϊκή Κεντρική Τράπεζα (ΕΚΤ) κατέστησε τον δανεισμό ακριβότερο. Παρ\' όλα αυτά, οι τιμές των ακινήτων συνέχισαν να ανεβαίνουν.<br><br>'
-            f'<b>Αιτία:</b> Πάνω από το <b>75%–80% των αγοραπωλησιών</b> στην Ελλάδα πραγματοποιούνται πλέον <b>χωρίς τραπεζικό δανεισμό (με ίδια κεφάλαια)</b>, κυρίως από ξένους αγοραστές, εγχώριες αποταμιεύσεις και επενδυτικά κεφάλαια, καθιστώντας την αγορά ανθεκτική στα υψηλά επιτόκια.</div></div>'
-
-            f'<div class="analyst-card">'
-            f'<div class="analyst-card-title">🏢 5. Πράσινα Νεόδμητα vs Παλαιά Ακίνητα (Energy Premium +30%)</div>'
-            f'<div class="analyst-card-text">Παρατηρείται διεύρυνση της ψαλίδας τιμών ανάλογα με την ενεργειακή κλάση του ακινήτου.<br><br>'
-            f'<b>Αιτία:</b> Τα νεόδμητα διαμερίσματα υψηλής ενεργειακής κλάσης (Α/Α+) καταγράφουν <b>premium τιμής +25% έως +35%</b> σε σχέση με παλαιά, μη ανακαινισμένα ακίνητα 40ετίας, λόγω του υψηλού κατασκευαστικού κόστους και των αυστηρών περιβαλλοντικών προτύπων της ΕΕ.</div></div>'
-
-            f'<div class="analyst-card">'
-            f'<div class="analyst-card-title">🔄 6. Δυναμική Αναθεωρήσεων Στοιχείων ΤτΕ (Data Revision Drift)</div>'
-            f'<div class="analyst-card-text">Από τη διασταύρωση των 62 XLS εκδόσεων της Τράπεζας της Ελλάδος προκύπτει ότι τα αρχικά «Προσωρινά» στοιχεία αναθεωρούνται συστηματικά προς τα πάνω.<br><br>'
-            f'<b>Αιτία:</b> Τα τριμηνιαία στοιχεία αναθεωρούνται κατά <b>+0.8% έως +1.6%</b> στα επόμενα 2-3 τρίμηνα καθώς ενσωματώνονται οι οριστικές εκτιμήσεις των συμβολαιογράφων και των εμπορικών τραπεζών.</div></div>'
-        )
-        st.markdown(report_html, unsafe_allow_html=True)
+        if dyn_insights:
+            report_html = (
+                f'<div class="analyst-card">'
+                f'<div class="analyst-card-title">📉 1. Ιστορικός Κύκλος Ύφεσης ({dyn_insights["peakPeriod"]} – {dyn_insights["troughPeriod"]}) ({dyn_insights["recessionDeclinePct"]:.1f}%)</div>'
+                f'<div class="analyst-card-text">Ο δείκτης τιμών διαμερισμάτων υποχώρησε από τις <b>{dyn_insights["peakIndex"]:.1f} μονάδες ({dyn_insights["peakPeriod"]})</b> στο ναδίρ των <b>{dyn_insights["troughIndex"]:.1f} μονάδων ({dyn_insights["troughPeriod"]})</b>, σημειώνοντας πτώση <b>{dyn_insights["recessionDeclinePct"]:.1f}%</b>.'
+                f'</div></div>'
+                
+                f'<div class="analyst-card">'
+                f'<div class="analyst-card-title">🚀 2. Πορεία Ανάκαμψης ({dyn_insights["troughPeriod"]} – {dyn_insights["latestPeriod"]}) (+{dyn_insights["recoveryReboundPct"]:.1f}%)</div>'
+                f'<div class="analyst-card-text">Από τις <b>{dyn_insights["troughIndex"]:.1f} μονάδες ({dyn_insights["troughPeriod"]})</b>, ο δείκτης ανέκαμψε κατά <b>+{dyn_insights["recoveryReboundPct"]:.1f}%</b> φτάνοντας στις <b>{dyn_insights["latestIndex"]:.1f} μονάδες ({dyn_insights["latestPeriod"]})</b>.'
+                f'</div></div>'
+                
+                f'<div class="analyst-card">'
+                f'<div class="analyst-card-title">📊 3. Συνολική Αθροιστική Μεταβολή ({dyn_insights["firstPeriod"]} – {dyn_insights["latestPeriod"]}) (+{dyn_insights["cumulativeGrowthPct"]:.1f}%)</div>'
+                f'<div class="analyst-card-text">Από την έναρξη των καταγραφών το <b>{dyn_insights["firstPeriod"]} ({dyn_insights["firstIndex"]:.1f})</b> έως τη νεότερη παρατήρηση <b>{dyn_insights["latestPeriod"]} ({dyn_insights["latestIndex"]:.1f})</b>, ο δείκτης κατέγραψε συνολική άνοδο <b>+{dyn_insights["cumulativeGrowthPct"]:.1f}%</b>.'
+                f'</div></div>'
+            )
+            st.markdown(report_html, unsafe_allow_html=True)
     else:
         st.title("💡 Market Insights & Macroeconomic Findings")
-        st.caption("Deep technical, economic, and credit market interpretation of 19,840 Bank of Greece records (2006–2025).")
+        st.caption(f"Deep technical interpretation of {total_obs} official Bank of Greece observations ({dyn_insights['firstPeriod']}–{dyn_insights['latestPeriod']}).")
         
-        report_html = (
-            f'<div class="analyst-card">'
-            f'<div class="analyst-card-title">📉 1. What Triggered the Great Recession (2008–2017)? (-42.2%)</div>'
-            f'<div class="analyst-card-text">The decline of the apartment price index from 101.5 (2008) to its trough of 59.0 (2017) was driven by 4 key macro shocks:'
-            f'<ul style="margin-top:8px; margin-left:20px;">'
-            f'<li><b>Disposable Income Collapse:</b> The Greek economy lost over 25% of GDP during sovereign debt bailout programs, contracting household purchasing power.</li>'
-            f'<li><b>Banking Credit Crunch:</b> New mortgage origination collapsed by <b>&gt;95%</b> as banks accumulated high Non-Performing Loans (NPLs).</li>'
-            f'<li><b>Property Taxation Imposition (ENFIA):</b> New recurrent property taxes forced distressed selling by owners struggling with maintenance costs.</li>'
-            f'<li><b>Construction Halt:</b> Residential building activity ground to a decade-long standstill.</li>'
-            f'</ul></div></div>'
-            
-            f'<div class="analyst-card">'
-            f'<div class="analyst-card-title">🚀 2. What Fueled the Rapid Recovery (2018–2025)? (+128.4%)</div>'
-            f'<div class="analyst-card-text">The sharp rebound from 59.0 to 134.8+ was driven by structural catalysts:'
-            f'<ul style="margin-top:8px; margin-left:20px;">'
-            f'<li><b>Foreign Capital Inflow & Golden Visa:</b> Billions in FDI from foreign buyers leveraging the €250k / €500k residency threshold.</li>'
-            f'<li><b>Short-Term Rental Expansion (Airbnb):</b> Conversion of housing inventory into tourist rentals in city centers, tightening residential supply.</li>'
-            f'<li><b>Severe Supply Deficit:</b> A decade of zero residential construction created an acute shortage of modern energy-efficient homes.</li>'
-            f'<li><b>Banking NPL Cleanup (Hercules Scheme):</b> Securitization of bad debt restoring bank balance sheets and renewed mortgage lending.</li>'
-            f'</ul></div></div>'
-            
-            f'<div class="analyst-card">'
-            f'<div class="analyst-card-title">🗺️ 3. Why Did Athens Decouple From Regional Greece?</div>'
-            f'<div class="analyst-card-text">The dataset highlights that <b>Athens (+136.2% from bottom)</b> and <b>Thessaloniki (+131.0%)</b> outperformed <b>Other Areas (+72.1%)</b>.<br><br>'
-            f'<b>Cause:</b> Metropolitan hubs absorbed the vast majority of international investment liquidity, tourism growth, and infrastructure spending (Ellinikon project, Metro expansions), whereas regional areas rely predominantly on domestic wage dynamics.</div></div>'
-
-            f'<div class="analyst-card">'
-            f'<div class="analyst-card-title">🏦 4. Credit Market Dynamics & High ECB Rates (2022–2025)</div>'
-            f'<div class="analyst-card-text">Aggressive interest rate hikes by the European Central Bank (ECB) increased borrowing costs, yet property prices continued rising unabated.<br><br>'
-            f'<b>Cause:</b> Over <b>75%–80% of transactions</b> in Greece are executed <b>100% in cash / equity</b> without bank mortgages, driven by international investors, domestic savings, and private equity funds.</div></div>'
-
-            f'<div class="analyst-card">'
-            f'<div class="analyst-card-title">🏢 5. Green Energy Buildings vs Aging Stock (Energy Premium +30%)</div>'
-            f'<div class="analyst-card-text">A substantial valuation gap has emerged based on property energy efficiency.<br><br>'
-            f'<b>Cause:</b> Modern Energy Class A/A+ apartments command a <b>+25% to +35% valuation premium</b> over 40-year-old un-renovated housing stock due to high construction standards and ESG mandates.</div></div>'
-
-            f'<div class="analyst-card">'
-            f'<div class="analyst-card-title">🔄 6. Bank of Greece Data Revision Dynamics</div>'
-            f'<div class="analyst-card-text">Cross-analyzing 62 Bank of Greece releases reveals that initial "Provisional" quarterly data is systematically adjusted upward.<br><br>'
-            f'<b>Cause:</b> Provisional figures adjust upward by <b>+0.8% to +1.6%</b> over subsequent quarters as final bank appraisal surveys finalize.</div></div>'
-        )
-        st.markdown(report_html, unsafe_allow_html=True)
+        if dyn_insights:
+            report_html = (
+                f'<div class="analyst-card">'
+                f'<div class="analyst-card-title">📉 1. Historical Recession Cycle ({dyn_insights["peakPeriod"]} – {dyn_insights["troughPeriod"]}) ({dyn_insights["recessionDeclinePct"]:.1f}%)</div>'
+                f'<div class="analyst-card-text">The apartment price index contracted from <b>{dyn_insights["peakIndex"]:.1f} ({dyn_insights["peakPeriod"]})</b> to its trough of <b>{dyn_insights["troughIndex"]:.1f} ({dyn_insights["troughPeriod"]})</b>, recording a total decline of <b>{dyn_insights["recessionDeclinePct"]:.1f}%</b>.'
+                f'</div></div>'
+                
+                f'<div class="analyst-card">'
+                f'<div class="analyst-card-title">🚀 2. Recovery Trajectory ({dyn_insights["troughPeriod"]} – {dyn_insights["latestPeriod"]}) (+{dyn_insights["recoveryReboundPct"]:.1f}%)</div>'
+                f'<div class="analyst-card-text">From the trough of <b>{dyn_insights["troughIndex"]:.1f} ({dyn_insights["troughPeriod"]})</b>, the index rebounded by <b>+{dyn_insights["recoveryReboundPct"]:.1f}%</b> to reach <b>{dyn_insights["latestIndex"]:.1f} ({dyn_insights["latestPeriod"]})</b>.'
+                f'</div></div>'
+                
+                f'<div class="analyst-card">'
+                f'<div class="analyst-card-title">📊 3. Cumulative Horizon Growth ({dyn_insights["firstPeriod"]} – {dyn_insights["latestPeriod"]}) (+{dyn_insights["cumulativeGrowthPct"]:.1f}%)</div>'
+                f'<div class="analyst-card-text">Across the full timeline from <b>{dyn_insights["firstPeriod"]} ({dyn_insights["firstIndex"]:.1f})</b> to <b>{dyn_insights["latestPeriod"]} ({dyn_insights["latestIndex"]:.1f})</b>, the overall price index expanded by <b>+{dyn_insights["cumulativeGrowthPct"]:.1f}%</b>.'
+                f'</div></div>'
+            )
+            st.markdown(report_html, unsafe_allow_html=True)
 
 
 # --- 3. COMPARE AREAS PAGE ---
@@ -915,10 +870,11 @@ elif app_key == "forecast":
         st.dataframe(fc_display, use_container_width=True)
 
         # ML Methodology & Sources Explanation Box
+        hist_count = len(hist_df)
         if lang == "el":
             ml_info = (
                 "ℹ️ <b>Πώς υπολογίζεται η Πρόβλεψη ML (Methodology & Data Sources):</b><br>"
-                "• <b>Πηγές Δεδομένων:</b> Το μοντέλο αντλεί δεδομένα από τις 19.840 επίσημες εγγραφές της Τράπεζας της Ελλάδος (2006–2025).<br>"
+                f"• <b>Πηγές Δεδομένων:</b> Το μοντέλο αντλεί δεδομένα από τις {hist_count} επίσημες τριμηνιαίες εγγραφές της Τράπεζας της Ελλάδος.<br>"
                 "• <b>Αλγόριθμος ML:</b> Χρησιμοποιείται το στατιστικό μοντέλο <i>Holt's Linear Exponential Smoothing</i> (`statsmodels`).<br>"
                 "• <b>Διανύσματα Τάσης:</b> Υπολογίζεται αυτόματα η παράμετρος τάσης (&beta;) και επιπέδου (&alpha;) για την προβολή των τιμών στο μέλλον.<br>"
                 "• <b>Ζώνες Εμπιστοσύνης 95%:</b> Υπολογίζεται η στατιστική διασπορά των υπολοίπων (&sigma;&sup2;), η οποία διευρύνεται αυξανόμενα σε κάθε μελλοντικό τρίμηνο."
@@ -926,7 +882,7 @@ elif app_key == "forecast":
         else:
             ml_info = (
                 "ℹ️ <b>How ML Forecasting Works (Methodology & Data Sources):</b><br>"
-                "• <b>Data Sources:</b> Ingests historical quarterly data across 19,840 official Bank of Greece price index records (2006–2025).<br>"
+                f"• <b>Data Sources:</b> Ingests historical quarterly data across {hist_count} official Bank of Greece price index records.<br>"
                 "• <b>ML Algorithm:</b> Fits a <i>Holt's Linear Exponential Smoothing</i> time-series model (`statsmodels`).<br>"
                 "• <b>Trend Vectors:</b> Dynamically estimates level (&alpha;) and trend (&beta;) smoothing parameters to project future valuation curves.<br>"
                 "• <b>95% Confidence Bounds:</b> Computes residual variance (&sigma;&sup2;) expanding over the forecast horizon."

@@ -22,3 +22,7 @@ pgdata/
 .DS_Store
 .vscode/
 .idea/
+.next/
+*.egg-info/
+data/test_sqlite.db
+

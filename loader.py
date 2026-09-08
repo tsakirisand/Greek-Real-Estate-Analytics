@@ -55,13 +55,9 @@ def download_or_get_local_file(url: str, local_name: str) -> str:
             return fallback_path
         raise e
 
-# Greek Geographical Regions definitions
+# Greek Geographical Regions definitions (Official Bank of Greece Series)
 GEOGRAPHICAL_REGIONS = [
-    {"name": "Athens (Αθήνα)", "slug": "athens", "type": "city", "code": "ATH", "mult": 1.00, "bias": 0.0},
-    {"name": "Greece Total (Ελλάδα)", "slug": "greece", "type": "country", "code": "GRC", "mult": 0.96, "bias": 0.5},
-    {"name": "Thessaloniki (Θεσσαλονίκη)", "slug": "thessaloniki", "type": "city", "code": "SKG", "mult": 0.94, "bias": -0.4},
-    {"name": "Other Big Cities (Λοιπές Μεγάλες Πόλεις)", "slug": "other-cities", "type": "region", "code": "OBC", "mult": 0.91, "bias": 1.2},
-    {"name": "Other Areas (Λοιπές Περιοχές)", "slug": "other-areas", "type": "region", "code": "OTH", "mult": 0.88, "bias": 2.1},
+    {"name": "Athens (Αθήνα)", "slug": "athens", "type": "city", "code": "ATH"},
 ]
 
 def parse_xls_file(file_path: str):
@@ -71,7 +67,7 @@ def parse_xls_file(file_path: str):
     if sheet.nrows < 2:
         return [], []
 
-    observations = []
+    raw_observations = []
 
     for r in range(1, sheet.nrows):
         row = [sheet.cell_value(r, c) for c in range(sheet.ncols)]
@@ -100,32 +96,48 @@ def parse_xls_file(file_path: str):
         status_str = str(row[5]).strip() if len(row) > 5 else ""
         is_provisional = "Προσωρινά" in status_str or "provisional" in status_str.lower()
 
-        # Generate entries for all Greek geographical areas
-        for region in GEOGRAPHICAL_REGIONS:
-            m = region["mult"]
-            b = region["bias"]
+        raw_observations.append({
+            "year": year,
+            "quarter": quarter,
+            "period_date": period_date,
+            "price_index": base_price_index,
+            "base_qoq": base_qoq,
+            "base_yoy": base_yoy,
+            "is_provisional": is_provisional
+        })
 
-            if region["slug"] == "athens":
-                reg_index = base_price_index
-                reg_qoq = base_qoq
-                reg_yoy = base_yoy
-            else:
-                # Calculate regional index series relative to base
-                reg_index = round((base_price_index * m) + b, 3)
-                reg_qoq = round(base_qoq * m, 3) if base_qoq is not None else None
-                reg_yoy = round(base_yoy * m, 3) if base_yoy is not None else None
+    # Sort chronologically to compute exact QoQ and YoY growth rates directly from index levels
+    raw_observations.sort(key=lambda x: x["period_date"])
 
-            observations.append({
-                "area_name": region["name"],
-                "area_slug": region["slug"],
-                "year": year,
-                "quarter": quarter,
-                "period_date": period_date,
-                "price_index": reg_index,
-                "period_change_percent": reg_qoq,
-                "annual_change_percent": reg_yoy,
-                "is_provisional": is_provisional
-            })
+    observations = []
+    for i, obs in enumerate(raw_observations):
+        p_idx = obs["price_index"]
+        
+        # Calculate QoQ % directly from previous quarter index level
+        if i >= 1:
+            prev_idx = raw_observations[i - 1]["price_index"]
+            qoq_pct = round(((p_idx - prev_idx) / prev_idx) * 100.0, 4) if prev_idx > 0 else None
+        else:
+            qoq_pct = obs["base_qoq"]
+
+        # Calculate YoY % directly from index level 4 quarters ago
+        if i >= 4:
+            yoy_idx = raw_observations[i - 4]["price_index"]
+            yoy_pct = round(((p_idx - yoy_idx) / yoy_idx) * 100.0, 4) if yoy_idx > 0 else None
+        else:
+            yoy_pct = obs["base_yoy"]
+
+        observations.append({
+            "area_name": GEOGRAPHICAL_REGIONS[0]["name"],
+            "area_slug": GEOGRAPHICAL_REGIONS[0]["slug"],
+            "year": obs["year"],
+            "quarter": obs["quarter"],
+            "period_date": obs["period_date"],
+            "price_index": p_idx,
+            "period_change_percent": qoq_pct,
+            "annual_change_percent": yoy_pct,
+            "is_provisional": obs["is_provisional"]
+        })
 
     return observations, GEOGRAPHICAL_REGIONS
 
@@ -213,11 +225,11 @@ def import_single_resource(db: Session, resource: DatasetResource):
             for obs in area_obs:
                 existing = db.query(PriceIndex).filter_by(
                     geographical_area_id=geo_area.id,
-                    period_date=obs["period_date"],
-                    dataset_resource_id=resource.id
+                    period_date=obs["period_date"]
                 ).first()
 
                 if existing:
+                    existing.dataset_resource_id = resource.id
                     existing.price_index = obs["price_index"]
                     existing.period_change_percent = obs["period_change_percent"]
                     existing.annual_change_percent = obs["annual_change_percent"]
@@ -265,6 +277,8 @@ def import_all():
     try:
         logger.info("Starting Python ETL Data Ingestion Pipeline...")
         data_source, resources = load_datapackage_and_sync(db)
+        # Sort resources by resource_date ascending so latest release updates authoritative records last
+        resources.sort(key=lambda r: r.resource_date)
         logger.info(f"Loaded metadata. Found {len(resources)} dataset resources.")
 
         success_count = 0
@@ -278,3 +292,4 @@ def import_all():
 
 if __name__ == "__main__":
     import_all()
+

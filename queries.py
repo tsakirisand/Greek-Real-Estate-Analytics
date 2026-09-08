@@ -91,25 +91,33 @@ def get_price_indices(
                     "areaSlug": r["areaSlug"],
                     "geographicalAreaId": r["geographicalAreaId"],
                     "indices": [],
-                    "qoq_changes": [],
-                    "yoy_changes": [],
                     "is_provisional": False,
                     "resourceName": r["resourceName"]
                 }
             item = yearly_map[key]
             item["indices"].append(float(r["priceIndex"]))
-            if r["periodChangePercent"] is not None:
-                item["qoq_changes"].append(float(r["periodChangePercent"]))
-            if r["annualChangePercent"] is not None:
-                item["yoy_changes"].append(float(r["annualChangePercent"]))
             if r["isProvisional"]:
                 item["is_provisional"] = True
 
         yearly_rows = []
-        for k, v in yearly_map.items():
+        sorted_years = sorted(yearly_map.keys(), key=lambda k: (yearly_map[k]["areaSlug"], yearly_map[k]["year"]))
+
+        area_prev_avg = {}
+
+        for k in sorted_years:
+            v = yearly_map[k]
+            area_s = v["areaSlug"]
             avg_idx = sum(v["indices"]) / len(v["indices"])
-            avg_qoq = sum(v["qoq_changes"]) / len(v["qoq_changes"]) if v["qoq_changes"] else None
-            avg_yoy = sum(v["yoy_changes"]) / len(v["yoy_changes"]) if v["yoy_changes"] else None
+            
+            # Compute annual YoY growth from annual average index level vs previous year
+            prev_avg = area_prev_avg.get(area_s)
+            if prev_avg is not None and prev_avg > 0:
+                annual_yoy = ((avg_idx - prev_avg) / prev_avg) * 100.0
+            else:
+                annual_yoy = None
+
+            area_prev_avg[area_s] = avg_idx
+
             yearly_rows.append({
                 "id": f"yearly-{v['areaSlug']}-{v['year']}",
                 "geographicalAreaId": v["geographicalAreaId"],
@@ -119,8 +127,8 @@ def get_price_indices(
                 "year": v["year"],
                 "quarter": "Annual Avg",
                 "priceIndex": round(avg_idx, 3),
-                "periodChangePercent": round(avg_qoq, 3) if avg_qoq is not None else None,
-                "annualChangePercent": round(avg_yoy, 3) if avg_yoy is not None else None,
+                "periodChangePercent": round(annual_yoy, 3) if annual_yoy is not None else None,
+                "annualChangePercent": round(annual_yoy, 3) if annual_yoy is not None else None,
                 "isProvisional": v["is_provisional"],
                 "resourceName": v["resourceName"],
                 "isDerivedYearlyAvg": True,
@@ -238,3 +246,47 @@ def get_market_statistics(
             "areaName": lowest_yoy["areaName"]
         }
     }
+
+def get_dynamic_market_insights(db: Session, area_slug: str = "athens"):
+    rows = get_price_indices(db, area_slugs=[area_slug], granularity="quarterly")
+    if not rows:
+        return None
+
+    rows_sorted = sorted(rows, key=lambda r: r["periodDate"])
+    first_obs = rows_sorted[0]
+    latest_obs = rows_sorted[-1]
+
+    # Find trough (minimum index level)
+    trough_obs = min(rows_sorted, key=lambda r: float(r["priceIndex"]))
+
+    # Find peak before trough (maximum index before trough date)
+    pre_trough_rows = [r for r in rows_sorted if r["periodDate"] <= trough_obs["periodDate"]]
+    peak_obs = max(pre_trough_rows, key=lambda r: float(r["priceIndex"])) if pre_trough_rows else rows_sorted[0]
+
+    f_idx = float(first_obs["priceIndex"])
+    l_idx = float(latest_obs["priceIndex"])
+    p_idx = float(peak_obs["priceIndex"])
+    t_idx = float(trough_obs["priceIndex"])
+
+    recession_decline = ((t_idx - p_idx) / p_idx) * 100.0 if p_idx > 0 else 0.0
+    recovery_rebound = ((l_idx - t_idx) / t_idx) * 100.0 if t_idx > 0 else 0.0
+    cum_growth = ((l_idx - f_idx) / f_idx) * 100.0 if f_idx > 0 else 0.0
+    base_2021_growth = l_idx - 100.0
+
+    return {
+        "areaName": latest_obs["areaName"],
+        "firstPeriod": f"{first_obs['year']} Q{first_obs['quarter']}",
+        "firstIndex": round(f_idx, 2),
+        "latestPeriod": f"{latest_obs['year']} Q{latest_obs['quarter']}",
+        "latestIndex": round(l_idx, 2),
+        "peakPeriod": f"{peak_obs['year']} Q{peak_obs['quarter']}",
+        "peakIndex": round(p_idx, 2),
+        "troughPeriod": f"{trough_obs['year']} Q{trough_obs['quarter']}",
+        "troughIndex": round(t_idx, 2),
+        "recessionDeclinePct": round(recession_decline, 2),
+        "recoveryReboundPct": round(recovery_rebound, 2),
+        "cumulativeGrowthPct": round(cum_growth, 2),
+        "base2021GrowthPct": round(base_2021_growth, 2),
+        "isProvisional": bool(latest_obs["isProvisional"])
+    }
+
