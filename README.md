@@ -481,16 +481,6 @@ All data points are extracted directly from official Bank of Greece index series
 
 ---
 
-## 🔮 Future Improvements
-
-1. **Expanded Regional Granularity:** Ingest prefecture and municipal-level sub-indices as separate release files become available on the Bank of Greece portal.
-2. **Automated Scraping Pipeline:** Implement Apache Airflow or Celery DAGs to automatically poll and extract new quarterly XLS releases from the Bank of Greece.
-3. **Ensemble ML Forecasting Models:** Expand the time-series forecasting suite by combining Holt's Exponential Smoothing with Prophet and XGBoost models.
-4. **Geospatial Interactive Layer:** Integrate Mapbox / Folium polygon maps for interactive neighborhood-level valuation overlays across Greek municipalities.
-5. **Cloud-Native Serverless Deployment:** Deploy the FastAPI REST service to AWS ECS Fargate or Lambda with Amazon Aurora Serverless PostgreSQL.
-
----
-
 ## 👨‍💻 Author
 
 **Andreas Tsakiris**
