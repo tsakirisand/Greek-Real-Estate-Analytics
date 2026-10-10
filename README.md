@@ -6,7 +6,7 @@ An end-to-end, production-grade financial analytics platform and REST API for pa
 
 ## 🚀 Live Demo
 
-🔗 **Public Deployed Application:** [https://greek-real-estate-analytics.onrender.com](https://greek-real-estate-analytics.onrender.com)
+🔗 **Public Deployed Application:** [https://greek-real-estate-analytics.streamlit.app](https://greek-real-estate-analytics.streamlit.app)
 
 ---
 
